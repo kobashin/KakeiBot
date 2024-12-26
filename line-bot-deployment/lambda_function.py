@@ -95,6 +95,7 @@ def makeDynamoDBTableItem(text):
     # split message
     splitted = text.split('\n')
     item['category'] = splitted[0]
+    item['sub-category'] = '-'
     item['price'] = splitted[1]
 
     return item
