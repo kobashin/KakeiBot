@@ -1,0 +1,12 @@
+design DynamoDB table
+userID          automatically   get from LINE Messaging API
+timestamp       automatically   get from Python library
+category        mandatory       get from message
+sub-category    optional        get from message
+price           mandatory       get from message
+
+check +/-
+fill sub-category automatically
+get userID
+get timestamp
+get and stock image

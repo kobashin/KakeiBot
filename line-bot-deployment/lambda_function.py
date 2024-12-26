@@ -104,9 +104,10 @@ def makeResponseMessage(item):
     """
     This function is used to make a response for LINE bot from table item
     """
-    
+
     tmp_response = [f"{key}:{value}" for key, value in item.items()]
     tmp_response = '\n'.join(tmp_response)
-    response = "Your log is successfully put into KakeiBot database!\n" + tmp_response
+    response = "Your log is successfully put into KakeiBot database!\n" \
+        + tmp_response
 
     return response
