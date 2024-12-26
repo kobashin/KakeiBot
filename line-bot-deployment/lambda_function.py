@@ -46,7 +46,7 @@ def handle_message(event):
 
     # 応答トークンを使って回答を応答メッセージで送る
     line_bot_api.reply_message(
-        event.reply_token, TextSendMessage(text=tmp_text))
+        event.reply_token, TextSendMessage(text=response))
 
 
 def lambda_handler(event, context):
@@ -90,13 +90,23 @@ def makeDynamoDBTableItem(text):
         sub-category    optional        get from message
         price           mandatory       get from message
     """
+    # tmp return value
+    item = {}
+    # split message
+    splitted = text.split('\n')
+    item['category'] = splitted[0]
+    item['price'] = splitted[1]
 
-    return {}
+    return item
 
 
 def makeResponseMessage(item):
     """
     This function is used to make a response for LINE bot from table item
     """
+    
+    tmp_response = [f"{key}:{value}" for key, value in item.items()]
+    tmp_response = '\n'.join(tmp_response)
+    response = "Your log is successfully put into KakeiBot database!\n" + tmp_response
 
-    return ""
+    return response
