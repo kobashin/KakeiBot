@@ -38,7 +38,7 @@ def handle_message(event):
     # get message text
     tmp_text = event.message.text
     # make a table item put into DynamoDB
-    item = makeDynamoDBTableItem(tmp_text)
+    item = makeDynamoDBTableItem(tmp_text, event)
     # make a response for LINE bot
     response = makeResponseMessage(item)
 

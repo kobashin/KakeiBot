@@ -1,7 +1,7 @@
 import re
 
 
-def makeDynamoDBTableItem(text):
+def makeDynamoDBTableItem(text, event):
     """
     This function is used to make a table item put into DynamoDB
 
@@ -28,22 +28,39 @@ def makeDynamoDBTableItem(text):
     # split message
     splitted = text.split('\n')
 
+    # get userID and timestamp from LINE event
+    item['userID'] = event.source.user_id
+    item['timestamp'] = event.timestamp
+
     # for each splitted item, check if it is numeric.
     # if it is, treat it as price.
     is_price = [bool(re.match(r'^[0-9]+$', item)) for item in splitted]
 
     # if True in is_price, get the price
     if True in is_price:
+        # get the category
+        item['category'] = splitted[0]
+
+        # get the sub-category if it exists
+        if is_price.index(True) >= 2:
+            item['sub-category'] = splitted[1]
+        else:
+            item['sub-category'] = '-'
+
         price = splitted[is_price.index(True)]
         item['price'] = price
 
-    # get the category
-    item['category'] = splitted[0]
-    # get the sub-category if it exists
-    if is_price.index(True) >= 2:
-        item['sub-category'] = splitted[1]
+        # get the memo if it exists
+        if len(splitted) > is_price.index(True) + 1:
+            item['memo'] = splitted[is_price.index(True) + 1]
+        else:
+            item['memo'] = '-'
+
     else:
+        item['category'] = '-'
         item['sub-category'] = '-'
+        item['price'] = '0'
+        item['memo'] = text
 
     return item
 
