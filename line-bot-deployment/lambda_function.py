@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from funcs import makeDynamoDBTableItem, makeResponseMessage
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
@@ -77,38 +78,3 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps('Success!')
     }
-
-
-def makeDynamoDBTableItem(text):
-    """
-    This function is used to make a table item put into DynamoDB
-
-    design DynamoDB table
-        userID          automatically   get from LINE Messaging API
-        timestamp       automatically   get from Python library
-        category        mandatory       get from message
-        sub-category    optional        get from message
-        price           mandatory       get from message
-    """
-    # tmp return value
-    item = {}
-    # split message
-    splitted = text.split('\n')
-    item['category'] = splitted[0]
-    item['sub-category'] = '-'
-    item['price'] = splitted[1]
-
-    return item
-
-
-def makeResponseMessage(item):
-    """
-    This function is used to make a response for LINE bot from table item
-    """
-
-    tmp_response = [f"{key}:{value}" for key, value in item.items()]
-    tmp_response = '\n'.join(tmp_response)
-    response = "Your log is successfully put into KakeiBot database!\n" \
-        + tmp_response
-
-    return response
