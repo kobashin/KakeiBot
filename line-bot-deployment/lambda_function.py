@@ -2,11 +2,17 @@ import json
 import logging
 import os
 import sys
+import boto3
 from funcs import makeDynamoDBTableItem, makeResponseMessage
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
+
+
+# DynamoDBに接続し、テーブル 'household_account' を指定
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('KakeiBot-Table')
 
 # INFOレベル以上のログメッセージを拾うように設定
 logger = logging.getLogger()
@@ -43,7 +49,7 @@ def handle_message(event):
     response = makeResponseMessage(item)
 
     # put item into DynamoDB
-    # Now designing...
+    table.put_item(Item=item)
 
     # 応答トークンを使って回答を応答メッセージで送る
     line_bot_api.reply_message(
