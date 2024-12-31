@@ -1,4 +1,5 @@
 import re
+import datetime
 
 
 def makeDynamoDBTableItem(text, event):
@@ -8,6 +9,7 @@ def makeDynamoDBTableItem(text, event):
     design DynamoDB table
         userID          automatically   get from LINE Messaging API
         timestamp       automatically   get from Python library
+        date            optional        get from message    
         category        mandatory       get from message
         sub-category    optional        get from message
         price           mandatory       get from message
@@ -31,6 +33,21 @@ def makeDynamoDBTableItem(text, event):
     # get userID and timestamp from LINE event
     item['userID'] = event.source.user_id
     item['timestamp'] = event.timestamp
+
+    # for each splitted item, check if it is date.
+    # if it is, treat it as date.
+    is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$', item))
+               for item in splitted]
+
+    # if True in is_date, get the date
+    if True in is_date:
+        item['date'] = splitted[is_date.index(True)]
+        splitted = splitted[1:]
+    else:
+        # if there is no date, use today's date like 'YYYY-MMDD-hhmm'
+        # example: 2021-0123-1234
+        # example: 2021-0123-2345
+        item['date'] = datetime.datetime.now().strftime('%Y-%m%d-%H%M')
 
     # for each splitted item, check if it is numeric.
     # if it is, treat it as price.
