@@ -36,7 +36,7 @@ def makeDynamoDBTableItem(text, event):
 
     # for each splitted item, check if it is date.
     # if it is, treat it as date.
-    is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$', item))
+    is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{4}-[0-9]{4}$', item))
                for item in splitted]
 
     # if True in is_date, get the date
