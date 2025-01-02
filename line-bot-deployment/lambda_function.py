@@ -2,10 +2,17 @@ import json
 import logging
 import os
 import sys
+import boto3
+from funcs import makeDynamoDBTableItem, makeResponseMessage
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
+
+
+# DynamoDBに接続し、テーブル 'household_account' を指定
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('KakeiBot-Table')
 
 # INFOレベル以上のログメッセージを拾うように設定
 logger = logging.getLogger()
@@ -37,12 +44,12 @@ def handle_message(event):
     # get message text
     tmp_text = event.message.text
     # make a table item put into DynamoDB
-    item = makeDynamoDBTableItem(tmp_text)
+    item = makeDynamoDBTableItem(tmp_text, event)
     # make a response for LINE bot
     response = makeResponseMessage(item)
 
     # put item into DynamoDB
-    # Now designing...
+    table.put_item(Item=item)
 
     # 応答トークンを使って回答を応答メッセージで送る
     line_bot_api.reply_message(
@@ -77,37 +84,3 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps('Success!')
     }
-
-
-def makeDynamoDBTableItem(text):
-    """
-    This function is used to make a table item put into DynamoDB
-
-    design DynamoDB table
-        userID          automatically   get from LINE Messaging API
-        timestamp       automatically   get from Python library
-        category        mandatory       get from message
-        sub-category    optional        get from message
-        price           mandatory       get from message
-    """
-    # tmp return value
-    item = {}
-    # split message
-    splitted = text.split('\n')
-    item['category'] = splitted[0]
-    item['price'] = splitted[1]
-
-    return item
-
-
-def makeResponseMessage(item):
-    """
-    This function is used to make a response for LINE bot from table item
-    """
-
-    tmp_response = [f"{key}:{value}" for key, value in item.items()]
-    tmp_response = '\n'.join(tmp_response)
-    response = "Your log is successfully put into KakeiBot database!\n" \
-        + tmp_response
-
-    return response
