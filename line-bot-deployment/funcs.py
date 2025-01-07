@@ -1,5 +1,6 @@
 import re
 import datetime
+from zoneinfo import ZoneInfo
 
 
 def makeDynamoDBTableItem(text, event):
@@ -9,7 +10,7 @@ def makeDynamoDBTableItem(text, event):
     design DynamoDB table
         userID          automatically   get from LINE Messaging API
         timestamp       automatically   get from Python library
-        date            optional        get from message    
+        date            optional        get from message
         category        mandatory       get from message
         sub-category    optional        get from message
         price           mandatory       get from message
@@ -30,10 +31,16 @@ def makeDynamoDBTableItem(text, event):
     # split message
     splitted = text.split('\n')
 
+    '''
+        userID and timestamp
+    '''
     # get userID and timestamp from LINE event
     item['userID'] = event.source.user_id
     item['timestamp'] = event.timestamp
 
+    '''
+        date
+    '''
     # for each splitted item, check if it is date.
     # if it is, treat it as date.
     is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{4}-[0-9]{4}$', item))
@@ -45,10 +52,16 @@ def makeDynamoDBTableItem(text, event):
         splitted = splitted[1:]
     else:
         # if there is no date, use today's date like 'YYYY-MMDD-hhmm'
+        # time-zone is 'Asia/Tokyo'
         # example: 2021-0123-1234
         # example: 2021-0123-2345
-        item['date'] = datetime.datetime.now().strftime('%Y-%m%d-%H%M')
+        item['date'] = datetime.datetime.now(
+            ZoneInfo("Asia/Tokyo")
+        ).strftime('%Y-%m%d-%H%M')
 
+    '''
+        price, category, sub-category, memo
+    '''
     # for each splitted item, check if it is numeric.
     # if it is, treat it as price.
     is_price = [bool(re.match(r'^[0-9]+$', item)) for item in splitted]
@@ -87,9 +100,13 @@ def makeResponseMessage(item):
     This function is used to make a response for LINE bot from table item
     """
 
+    # if userID exists in item, shorten it
+    if 'userID' in item:
+        item['userID'] = item['userID'][:10] + '...'
+
     tmp_response = [f"{key}:{value}" for key, value in item.items()]
     tmp_response = '\n'.join(tmp_response)
-    response = "Your log is successfully put into KakeiBot database!\n" \
+    response = "KakeiBot is updated!\n" \
         + tmp_response
 
     return response
