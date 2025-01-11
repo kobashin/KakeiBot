@@ -1,0 +1,30 @@
+name: Upload to S3
+# ref
+# https://zenn.dev/rescuenow/articles/1976c01e28b3cc
+# https://zenn.dev/kou_pg_0131/articles/gh-actions-oidc-aws
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.arn:aws:iam::288363392776:role/github-actions-fileupload-to-s3 }}
+          aws-region: ${{ secrets.us-east-1 }}
+      - name: Upload to S3
+        run: |
+          aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
+      - name: Sync images folder to S3
