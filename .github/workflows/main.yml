@@ -22,8 +22,8 @@ jobs:
       - name: Set up AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ secrets.arn:aws:iam::288363392776:role/github-actions-fileupload-to-s3 }}
-          aws-region: ${{ secrets.us-east-1 }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
       - name: Upload to S3
         run: |
           aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
