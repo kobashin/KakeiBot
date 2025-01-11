@@ -24,6 +24,9 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
+      - name: Debug AWS CLI
+        run: aws sts get-caller-identity
       - name: Upload to S3
         run: |
+          echo "Uploading to S3..."
           aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
