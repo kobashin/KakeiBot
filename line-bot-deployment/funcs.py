@@ -43,8 +43,8 @@ def makeDynamoDBTableItem(text, event):
     '''
     # for each splitted item, check if it is date.
     # if it is, treat it as date.
-    is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{4}-[0-9]{4}$', item))
-               for item in splitted]
+    is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{4}-[0-9]{4}$', item)) for item
+               in splitted]
 
     # if True in is_date, get the date
     if True in is_date:
@@ -64,7 +64,8 @@ def makeDynamoDBTableItem(text, event):
     '''
     # for each splitted item, check if it is numeric.
     # if it is, treat it as price.
-    is_price = [bool(re.match(r'^[0-9]+$', item)) for item in splitted]
+    is_price = [bool(re.match(r'^([0-9],*)+[0-9]$', item)) for item
+                in splitted]
 
     # if True in is_price, get the price
     if True in is_price:
