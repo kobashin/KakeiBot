@@ -1,1 +1,0 @@
-Compress-Archive -Update -Path .\line-bot-deployment\* -DestinationPath .\line-bot-deployment.zip
