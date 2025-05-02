@@ -37,3 +37,7 @@ jobs:
         run: |
           echo "Uploading to S3..."
           aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
+          echo "Uploading layer.zip to S3..."
+          aws s3 cp layer.zip s3://bucket-kakeibot/layer.zip
+          echo "Uploading kakeibot-weekly.zip to S3..."
+          aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
