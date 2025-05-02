@@ -1,6 +1,8 @@
 analysis/
 python/
+kakeibot-weekly/
 info.txt
 zip-command.bat
+zip-command-for-weekly.bat
 zip-command-for-layer.bat
 test_weekly-notify.py
