@@ -8,13 +8,15 @@ on:
   push:
     branches:
       - develop
+      - feature-weekly-notify
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  upload:
+  upload-functions-and-layer:
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
 
     steps:
@@ -39,5 +41,30 @@ jobs:
           aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
           echo "Uploading layer.zip to S3..."
           aws s3 cp layer.zip s3://bucket-kakeibot/layer.zip
+          echo "Uploading kakeibot-weekly.zip to S3..."
+          aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
+
+  upload-kakeibot-weekly-zip:
+    if: github.ref == 'refs/heads/feature-weekly-notify'
+    runs-on: ubuntu-latest
+
+    steps:
+      # clone codes from repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # check if the credentials are set correctly
+      - name: Debug AWS CLI
+        run: aws sts get-caller-identity
+
+      # upload line-bot-deployment.zip to the specified S3-bucket
+      - name: Upload to S3
+        run: |
           echo "Uploading kakeibot-weekly.zip to S3..."
           aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip

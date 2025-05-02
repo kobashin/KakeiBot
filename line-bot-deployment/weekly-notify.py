@@ -1,5 +1,12 @@
 import requests
 import os
+import boto3
+
+# DynamoDBに接続し、テーブル 'KakeiBot-Table' を指定
+dynamodb = boto3.resource('dynamodb')
+# table = dynamodb.Table('KakeiBot-Table')
+description = dynamodb.describe_table(TableName='KakeiBot-Table')
+table_size_bytes = description['Table']['TableSizeBytes']
 
 
 def lambda_handler(event, context):
@@ -8,7 +15,9 @@ def lambda_handler(event, context):
     group_id = os.environ['GROUP_ID']  # 送信先ユーザーID
 
     # ここで送信するメッセージ内容を作成（後でDynamoDBから取得したサマリーに置き換える）
-    message = "毎週月曜日にメッセージを送ります！\n先週使った金額などをお知らせする予定ですが、実装中です...\nしばらくお待ちください..."
+    message = "Test : weekly-notify.py\n" + \
+        "DynamoDBのテーブル名はKakeiBot-Tableです。\n" + \
+        "DynamoDBのテーブルサイズは" + str(table_size_bytes) + "バイトです。"
 
     # LINE Messaging API用のヘッダーを設定
     headers = {
