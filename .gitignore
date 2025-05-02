@@ -1,1 +1,6 @@
 analysis/
+python/
+info.txt
+zip-command.bat
+zip-command-for-layer.bat
+test_weekly-notify.py

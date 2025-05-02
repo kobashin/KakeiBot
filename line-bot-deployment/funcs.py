@@ -37,6 +37,7 @@ def makeDynamoDBTableItem(text, event):
     # get userID and timestamp from LINE event
     item['userID'] = event.source.user_id
     item['timestamp'] = event.timestamp
+    item['groupID'] = event.source.group_id
 
     '''
         date
