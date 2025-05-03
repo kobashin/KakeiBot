@@ -4,7 +4,7 @@ import time
 import boto3
 
 # DynamoDBに接続し、テーブル 'KakeiBot-Table' を指定
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.client('dynamodb')
 # table = dynamodb.Table('KakeiBot-Table')
 
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/describe_table.html
