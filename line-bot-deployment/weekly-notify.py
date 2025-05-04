@@ -35,6 +35,8 @@ end_time = now.replace(hour=23, minute=59, second=0, microsecond=0)
 # To get the date in the format YYYY-MMDD-HHMM, we need to format the date.
 start_time_str = start_time.strftime('%Y-%m%d-%H%M')
 end_time_str = end_time.strftime('%Y-%m%d-%H%M')
+start_time_str_short = start_time.strftime('%m%d')
+end_time_str_short = end_time.strftime('%m%d')
 
 
 def get_deposit():
@@ -82,9 +84,9 @@ def get_deposit():
         summary[sub_category] += price
 
     # print summary
-    tmp_deposit = [f"{key}:{value}" for key, value in summary.items()]
+    tmp_deposit = [f"{key}:{value}円" for key, value in summary.items()]
     tmp_deposit = '\n'.join(tmp_deposit)
-    deposit = f"Deposit of last week\n{tmp_deposit}"
+    deposit = f"先週({start_time_str_short}~{end_time_str_short})の拠出金額\n{tmp_deposit}"
     return deposit
 
 
