@@ -1,6 +1,8 @@
 import requests
 import os
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import boto3
 
 # DynamoDBに接続し、テーブル 'KakeiBot-Table' を指定
@@ -14,6 +16,9 @@ time.sleep(3)
 # description = dynamodb.describe_table(TableName='KakeiBot-Table')
 # table_size_bytes = description['Table']['TableSizeBytes']
 # table_item_count = description['Table']['ItemCount']
+
+# This function will be invoked by AWS Lambda.
+# Schedule expression is "cron(0 8 ? * MON *)".
 
 def get_deposit():
     response = dynamodb.scan(
