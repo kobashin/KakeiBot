@@ -1,7 +1,7 @@
 import requests
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import boto3
 
@@ -17,8 +17,25 @@ time.sleep(3)
 # table_size_bytes = description['Table']['TableSizeBytes']
 # table_item_count = description['Table']['ItemCount']
 
-# This function will be invoked by AWS Lambda.
-# Schedule expression is "cron(0 8 ? * MON *)".
+# This function will be invoked by AWS EventBridge/Lambda.
+# Schedule expression is "cron(0 23 ? * SUN *)".
+# Start time is 00:00 JST on last Monday.
+# End time is 23:59 JST on last Sunday.
+# The time zone is Asia/Tokyo (JST).
+# For example, if this function is invoked 23:00 on 2025-05-04 (Sunday),
+# the start_time is 00:00 on 2025-04-28 (Monday) and the end_time is 23:59 on 2025-05-04 (Sunday).
+
+now = datetime.now(ZoneInfo('Asia/Tokyo'))
+# To get start_time, we need to subtract 6 days from the current date and set the time to 00:00.
+start_time = now - timedelta(days=6)
+start_time = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+# To get end_time, we need to set the time to 23:59.
+end_time = now.replace(hour=23, minute=59, second=0, microsecond=0)
+
+# To get the date in the format YYYY-MMDD-HHMM, we need to format the date.
+start_time_str = start_time.strftime('%Y-%m%d-%H%M')
+end_time_str = end_time.strftime('%Y-%m%d-%H%M')
+
 
 def get_deposit():
     response = dynamodb.scan(
@@ -34,8 +51,8 @@ def get_deposit():
         ExpressionAttributeValues={
             ':deposit': {'S': '入金'},
             ':withdrawal': {'S': '拠出'},
-            ':start': {'S': '2025-0428-0000'},
-            ':end': {'S': '2025-0504-2359'}
+            ':start': {'S': start_time_str},
+            ':end': {'S': end_time_str}
         }
     )
 
