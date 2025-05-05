@@ -39,6 +39,40 @@ start_time_str_short = start_time.strftime('%m%d')
 end_time_str_short = end_time.strftime('%m%d')
 
 
+def get_food():
+    response = dynamodb.scan(
+        TableName='KakeiBot-Table',
+        FilterExpression=(
+            '(category = :food) '
+            'AND (#dt BETWEEN :start AND :end)'
+        ),
+        ExpressionAttributeNames={
+            '#dt': 'date'
+        },
+        ExpressionAttributeValues={
+            ':food': {'S': '食費'},
+            ':start': {'S': start_time_str},
+            ':end': {'S': end_time_str}
+        },
+        summary = {
+            '自炊': 0,
+            '外食': 0,
+            'その他': 0
+        }
+        for item in response[Items]:
+            sub_category = item['sub-category']['S']
+            price = int(item['price']['S'])
+            if sub_category not in summary:
+                summary['その他'] += price
+            else:
+                summary[sub_category] += price
+        tmp_food = [f"{key}:{value}円" for key, value in summary.items()]
+        tmp_food = '\n'.join(tmp_food)
+        food = f"[食費]\n{tmp_food}"
+        return food
+    )
+
+
 def get_deposit():
     response = dynamodb.scan(
         TableName='KakeiBot-Table',
@@ -86,7 +120,7 @@ def get_deposit():
     # print summary
     tmp_deposit = [f"{key}:{value}円" for key, value in summary.items()]
     tmp_deposit = '\n'.join(tmp_deposit)
-    deposit = f"先週({start_time_str_short}~{end_time_str_short})の拠出金額\n{tmp_deposit}"
+    deposit = f"[拠出金額]\n{tmp_deposit}"
     return deposit
 
 
@@ -102,7 +136,12 @@ def lambda_handler(event, context):
         "KakeiBot-Tableのアイテム数は" + str(table_item_count) + "件です。\n" + \
         "KakeiBot-Tableのサイズは" + str(table_size_bytes) + "バイトです。"
     """
-    message = get_deposit()
+    message = f"先週({}~{})の出費\n{}\n{}".format(
+        start_time_str_short,
+        end_time_str_short,
+        get_food(),
+        get_deposit()
+    )
 
     # LINE Messaging API用のヘッダーを設定
     headers = {
