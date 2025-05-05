@@ -60,7 +60,7 @@ def get_food():
         '外食': 0,
         'その他': 0
     }
-    for item in response[Items]:
+    for item in response['Items']:
         sub_category = item['sub-category']['S']
         price = int(item['price']['S'])
         if sub_category not in summary:
