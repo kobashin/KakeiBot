@@ -67,7 +67,7 @@ def get_food():
             summary['その他'] += price
         else:
             summary[sub_category] += price
-            
+
     tmp_food = [f"{key}:{value}円" for key, value in summary.items()]
     tmp_food = '\n'.join(tmp_food)
     food = f"[食費]\n{tmp_food}"
@@ -137,7 +137,7 @@ def lambda_handler(event, context):
         "KakeiBot-Tableのアイテム数は" + str(table_item_count) + "件です。\n" + \
         "KakeiBot-Tableのサイズは" + str(table_size_bytes) + "バイトです。"
     """
-    message = f"先週({}~{})の出費\n{}\n{}".format(
+    message = "先週({}~{})の出費\n{}\n{}".format(
         start_time_str_short,
         end_time_str_short,
         get_food(),
