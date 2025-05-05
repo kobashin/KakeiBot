@@ -53,24 +53,25 @@ def get_food():
             ':food': {'S': '食費'},
             ':start': {'S': start_time_str},
             ':end': {'S': end_time_str}
-        },
-        summary = {
-            '自炊': 0,
-            '外食': 0,
-            'その他': 0
         }
-        for item in response[Items]:
-            sub_category = item['sub-category']['S']
-            price = int(item['price']['S'])
-            if sub_category not in summary:
-                summary['その他'] += price
-            else:
-                summary[sub_category] += price
-        tmp_food = [f"{key}:{value}円" for key, value in summary.items()]
-        tmp_food = '\n'.join(tmp_food)
-        food = f"[食費]\n{tmp_food}"
-        return food
     )
+    summary = {
+        '自炊': 0,
+        '外食': 0,
+        'その他': 0
+    }
+    for item in response[Items]:
+        sub_category = item['sub-category']['S']
+        price = int(item['price']['S'])
+        if sub_category not in summary:
+            summary['その他'] += price
+        else:
+            summary[sub_category] += price
+            
+    tmp_food = [f"{key}:{value}円" for key, value in summary.items()]
+    tmp_food = '\n'.join(tmp_food)
+    food = f"[食費]\n{tmp_food}"
+    return food
 
 
 def get_deposit():
