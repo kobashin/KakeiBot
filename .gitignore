@@ -7,3 +7,4 @@ zip-command-for-weekly.bat
 zip-command-for-layer.bat
 test_weekly-notify.py
 archive-for-weekly.sh
+README_Internal.md
