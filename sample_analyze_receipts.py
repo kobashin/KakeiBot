@@ -9,6 +9,7 @@ https://learn.microsoft.com/azure/ai-services/document-intelligence/quickstarts/
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
+import os
 
 """
 Remember to remove the key from your code when you're done, and never post it publicly. For production, use
@@ -16,19 +17,22 @@ secure methods to store and access your credentials. For more information, see
 https://docs.microsoft.com/en-us/azure/cognitive-services/cognitive-services-security?tabs=command-line%2Ccsharp#environment-variables-and-application-configuration
 """
 
-endpoint = "YOUR_FORM_RECOGNIZER_ENDPOINT"
-key = "YOUR_FORM_RECOGNIZER_KEY"
+# Set your Azure Document Intelligence endpoint and key from environment variables
+endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
+key = os.environ["AZURE_DOCUMENT_INTELLIGENCE_KEY"]
 
 # sample document
-url = "https://raw.githubusercontent.com/Azure/azure-sdk-for-python/main/sdk/formrecognizer/azure-ai-formrecognizer/tests/sample_forms/receipt/contoso-receipt.png"
+local_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img", "receipt-seveneleven.jpg")
 
 document_intelligence_client  = DocumentIntelligenceClient(
     endpoint=endpoint, credential=AzureKeyCredential(key)
 )
 
-poller = document_intelligence_client.begin_analyze_document(
-    "prebuilt-receipt", AnalyzeDocumentRequest(url_source=url)
-)
+# Read the local image file
+with open(local_image_path, "rb") as f:
+    poller = document_intelligence_client.begin_analyze_document(
+        "prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=f.read())
+    )
 receipts = poller.result()
 
 for idx, receipt in enumerate(receipts.documents):
