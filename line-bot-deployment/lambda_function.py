@@ -7,7 +7,9 @@ from funcs import makeDynamoDBTableItem, makeResponseMessage
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageMessage
+import requests
+from io import BytesIO
 
 
 # DynamoDBに接続し、テーブル 'household_account' を指定
@@ -54,6 +56,61 @@ def handle_message(event):
     # 応答トークンを使って回答を応答メッセージで送る
     line_bot_api.reply_message(
         event.reply_token, TextSendMessage(text=response))
+
+
+# 画像メッセージを処理する
+@webhook_handler.add(MessageEvent, message=ImageMessage)
+def handle_image(event):
+    try:
+        # 画像メッセージのIDを取得
+        message_id = event.message.id
+        
+        # LINE APIから画像コンテンツを取得
+        message_content = line_bot_api.get_message_content(message_id)
+        
+        # 画像データを読み込む
+        image_data = BytesIO()
+        for chunk in message_content.iter_content():
+            image_data.write(chunk)
+        image_data.seek(0)
+        
+        """
+        # #This will be implemented in the future.
+
+        # Azure Custom Visionで画像を解析
+        analysis_result = analyze_image_with_azure(image_data)
+        
+        # 解析結果からDynamoDBアイテムを作成
+        item = makeImageAnalysisItem(analysis_result, event)
+        
+        # DynamoDBに登録
+        table.put_item(Item=item)
+
+        # 解析結果をユーザーに返信
+        response_text = f"画像を解析しました。\n購入日時: {item.get('date', '不明')}\n金額: {item.get('price', '不明')}円"
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=response_text)
+        )
+        """
+        
+        # 画像データのサイズや形式(jpg, pngなど)の情報を取得する
+        image_info = {
+            "size": image_data.getbuffer().nbytes,
+            "format": "jpg" if image_data.getvalue().startswith(b'\xff\xd8') else "png"
+        }
+
+        # 解析結果をユーザーに返信
+        response_text = f"画像を解析しました。\nサイズ: {image_info['size']}バイト\n形式: {image_info['format']}"
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=response_text)
+        )
+
+    except Exception as e:
+        logger.error(f"Error processing image: {str(e)}")
+        line_bot_api.reply_message(
+            event.reply_token, 
+            TextSendMessage(text="画像の解析中にエラーが発生しました。")
+        )
 
 
 def lambda_handler(event, context):
