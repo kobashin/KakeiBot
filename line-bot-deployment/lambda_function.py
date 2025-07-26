@@ -3,7 +3,11 @@ import logging
 import os
 import sys
 import boto3
-from funcs import makeDynamoDBTableItem, makeResponseMessage
+from funcs import makeDynamoDBTableItem_from_text, makeDynamoDBTableItem_from_image, makeResponseMessage
+
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
@@ -46,7 +50,7 @@ def handle_message(event):
     # get message text
     tmp_text = event.message.text
     # make a table item put into DynamoDB
-    item = makeDynamoDBTableItem(tmp_text, event)
+    item = makeDynamoDBTableItem_from_text(tmp_text, event)
     # make a response for LINE bot
     response = makeResponseMessage(item)
 
@@ -73,25 +77,20 @@ def handle_image(event):
         for chunk in message_content.iter_content():
             image_data.write(chunk)
         image_data.seek(0)
-        
-        """
-        # #This will be implemented in the future.
 
         # Azure Custom Visionで画像を解析
-        analysis_result = analyze_image_with_azure(image_data)
-        
-        # 解析結果からDynamoDBアイテムを作成
-        item = makeImageAnalysisItem(analysis_result, event)
+        item = makeDynamoDBTableItem_from_image(image_data, event)
+
+        # make a response for LINE bot
+        response = makeResponseMessage(item)
         
         # DynamoDBに登録
         table.put_item(Item=item)
 
         # 解析結果をユーザーに返信
-        response_text = f"画像を解析しました。\n購入日時: {item.get('date', '不明')}\n金額: {item.get('price', '不明')}円"
         line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=response_text)
+            event.reply_token, TextSendMessage(text=response)
         )
-        """
         
         # 画像データのサイズや形式(jpg, pngなど)の情報を取得する
         image_info = {

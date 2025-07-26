@@ -22,7 +22,10 @@ endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
 key = os.environ["AZURE_DOCUMENT_INTELLIGENCE_KEY"]
 
 # sample document
-local_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img", "receipt-seveneleven.jpg")
+# local_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img", "receipt-seveneleven.jpg")
+# local_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img", "receipt-kamashin.jpg")
+# local_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img", "receipt-yorkbenimaru.jpg")
+local_image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img", "receipt-familymart.jpg")
 
 document_intelligence_client  = DocumentIntelligenceClient(
     endpoint=endpoint, credential=AzureKeyCredential(key)
