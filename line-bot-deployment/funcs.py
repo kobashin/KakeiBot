@@ -145,6 +145,11 @@ def makeDynamoDBTableItem_from_image(image_data, event):
             transaction_date = receipt.fields.get("TransactionDate")
             if transaction_date:
                 item['date'] = convert_transaction_date_to_string(transaction_date.value_date)
+            else:
+                # If no transaction date found, use current date in Tokyo timezone
+                item['date'] = datetime.datetime.now(
+                    ZoneInfo("Asia/Tokyo")
+                ).strftime('%Y-%m%d-%H%M')
 
             # Category
             # If receipt type is "receipt.retailMeal", set category to "食費"
@@ -182,6 +187,9 @@ def makeDynamoDBTableItem_from_image(image_data, event):
             'userID': event.source.user_id,
             'timestamp': event.timestamp,
             'groupID': event.source.group_id,
+            'date': datetime.datetime.now(
+                ZoneInfo("Asia/Tokyo")
+            ).strftime('%Y-%m%d-%H%M'),
             'category': 'Error',
             'price': 0,
             'memo': f'Image analysis failed: {str(e)}'
