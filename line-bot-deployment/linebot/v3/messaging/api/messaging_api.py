@@ -18,17 +18,17 @@ import io
 from pydantic.v1 import validate_arguments, ValidationError
 from typing_extensions import Annotated
 
-from pydantic.v1 import Field, StrictStr, conint, constr, validator
+from pydantic.v1 import Field, StrictInt, StrictStr, conint, constr, validator
 
 from typing import Any, Dict, Optional
 
-from linebot.v3.messaging.models.audience_match_messages_request import AudienceMatchMessagesRequest
 from linebot.v3.messaging.models.bot_info_response import BotInfoResponse
 from linebot.v3.messaging.models.broadcast_request import BroadcastRequest
 from linebot.v3.messaging.models.create_rich_menu_alias_request import CreateRichMenuAliasRequest
 from linebot.v3.messaging.models.get_aggregation_unit_name_list_response import GetAggregationUnitNameListResponse
 from linebot.v3.messaging.models.get_aggregation_unit_usage_response import GetAggregationUnitUsageResponse
 from linebot.v3.messaging.models.get_followers_response import GetFollowersResponse
+from linebot.v3.messaging.models.get_joined_membership_users_response import GetJoinedMembershipUsersResponse
 from linebot.v3.messaging.models.get_membership_subscription_response import GetMembershipSubscriptionResponse
 from linebot.v3.messaging.models.get_webhook_endpoint_response import GetWebhookEndpointResponse
 from linebot.v3.messaging.models.group_member_count_response import GroupMemberCountResponse
@@ -90,148 +90,6 @@ class MessagingApi(object):
         self.api_client = api_client
         self.line_base_path = "https://api.line.me"
 
-
-    @validate_arguments
-    def audience_match(self, audience_match_messages_request : AudienceMatchMessagesRequest, **kwargs) -> None:  # noqa: E501
-        """audience_match  # noqa: E501
-
-        Send a message using phone number  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.audience_match(audience_match_messages_request, async_req=True)
-        >>> result = thread.get()
-
-        :param audience_match_messages_request: (required)
-        :type audience_match_messages_request: AudienceMatchMessagesRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            raise ValueError("Error! Please call the audience_match_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.audience_match_with_http_info(audience_match_messages_request, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def audience_match_with_http_info(self, audience_match_messages_request : AudienceMatchMessagesRequest, **kwargs) -> ApiResponse:  # noqa: E501
-        """audience_match  # noqa: E501
-
-        Send a message using phone number  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.audience_match_with_http_info(audience_match_messages_request, async_req=True)
-        >>> result = thread.get()
-
-        :param audience_match_messages_request: (required)
-        :type audience_match_messages_request: AudienceMatchMessagesRequest
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
-        :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-
-        _host = self.line_base_path
-        _params = locals()
-
-        _all_params = [
-            'audience_match_messages_request'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
-        )
-
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method audience_match" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        if _params['audience_match_messages_request'] is not None:
-            _body_params = _params['audience_match_messages_request']
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
-
-        # authentication setting
-        _auth_settings = ['Bearer']  # noqa: E501
-
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/bot/ad/multicast/phone', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
-            response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            _host=_host,
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
     def broadcast(self, broadcast_request : BroadcastRequest, x_line_retry_key : Annotated[Optional[StrictStr], Field(description="Retry key. Specifies the UUID in hexadecimal format (e.g., `123e4567-e89b-12d3-a456-426614174000`) generated by any method. The retry key isn't generated by LINE. Each developer must generate their own retry key. ")] = None, **kwargs) -> object:  # noqa: E501
@@ -1072,147 +930,6 @@ class MessagingApi(object):
 
         return self.api_client.call_api(
             '/v2/bot/richmenu/alias/{richMenuAliasId}', 'DELETE',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
-            response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            _host=_host,
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
-
-    @validate_arguments
-    def get_ad_phone_message_statistics(self, var_date : Annotated[StrictStr, Field(..., description="Date the message was sent  Format: `yyyyMMdd` (e.g. `20190831`) Time Zone: UTC+9 ")], **kwargs) -> NumberOfMessagesResponse:  # noqa: E501
-        """get_ad_phone_message_statistics  # noqa: E501
-
-        Get result of message delivery using phone number  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_ad_phone_message_statistics(var_date, async_req=True)
-        >>> result = thread.get()
-
-        :param var_date: Date the message was sent  Format: `yyyyMMdd` (e.g. `20190831`) Time Zone: UTC+9  (required)
-        :type var_date: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: NumberOfMessagesResponse
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            raise ValueError("Error! Please call the get_ad_phone_message_statistics_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.get_ad_phone_message_statistics_with_http_info(var_date, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def get_ad_phone_message_statistics_with_http_info(self, var_date : Annotated[StrictStr, Field(..., description="Date the message was sent  Format: `yyyyMMdd` (e.g. `20190831`) Time Zone: UTC+9 ")], **kwargs) -> ApiResponse:  # noqa: E501
-        """get_ad_phone_message_statistics  # noqa: E501
-
-        Get result of message delivery using phone number  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_ad_phone_message_statistics_with_http_info(var_date, async_req=True)
-        >>> result = thread.get()
-
-        :param var_date: Date the message was sent  Format: `yyyyMMdd` (e.g. `20190831`) Time Zone: UTC+9  (required)
-        :type var_date: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
-        :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: tuple(NumberOfMessagesResponse, status_code(int), headers(HTTPHeaderDict))
-        """
-
-        _host = self.line_base_path
-        _params = locals()
-
-        _all_params = [
-            'var_date'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
-        )
-
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_ad_phone_message_statistics" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-
-        # process the query parameters
-        _query_params = []
-        if _params.get('var_date') is not None:  # noqa: E501
-            _query_params.append(('date', _params['var_date']))
-
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # authentication setting
-        _auth_settings = ['Bearer']  # noqa: E501
-
-        _response_types_map = {
-            '200': "NumberOfMessagesResponse",
-        }
-
-        return self.api_client.call_api(
-            '/v2/bot/message/delivery/ad_phone', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -2490,6 +2207,165 @@ class MessagingApi(object):
 
         return self.api_client.call_api(
             '/v2/bot/group/{groupId}/summary', 'GET',
+            _path_params,
+            _query_params,
+            _header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            response_types_map=_response_types_map,
+            auth_settings=_auth_settings,
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
+            _host=_host,
+            collection_formats=_collection_formats,
+            _request_auth=_params.get('_request_auth'))
+
+    @validate_arguments
+    def get_joined_membership_users(self, membership_id : Annotated[StrictInt, Field(..., description="Membership plan ID.")], start : Annotated[Optional[StrictStr], Field(description="A continuation token to get next remaining membership user IDs. Returned only when there are remaining user IDs that weren't returned in the userIds property in the previous request. The continuation token expires in 24 hours (86,400 seconds). ")] = None, limit : Annotated[Optional[conint(strict=True, le=1000, ge=1)], Field(description="The max number of items to return for this API call. The value is set to 300 by default, but the max acceptable value is 1000. ")] = None, **kwargs) -> GetJoinedMembershipUsersResponse:  # noqa: E501
+        """get_joined_membership_users  # noqa: E501
+
+        Get a list of user IDs who joined the membership.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.get_joined_membership_users(membership_id, start, limit, async_req=True)
+        >>> result = thread.get()
+
+        :param membership_id: Membership plan ID. (required)
+        :type membership_id: int
+        :param start: A continuation token to get next remaining membership user IDs. Returned only when there are remaining user IDs that weren't returned in the userIds property in the previous request. The continuation token expires in 24 hours (86,400 seconds). 
+        :type start: str
+        :param limit: The max number of items to return for this API call. The value is set to 300 by default, but the max acceptable value is 1000. 
+        :type limit: int
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: GetJoinedMembershipUsersResponse
+        """
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
+            raise ValueError("Error! Please call the get_joined_membership_users_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
+        return self.get_joined_membership_users_with_http_info(membership_id, start, limit, **kwargs)  # noqa: E501
+
+    @validate_arguments
+    def get_joined_membership_users_with_http_info(self, membership_id : Annotated[StrictInt, Field(..., description="Membership plan ID.")], start : Annotated[Optional[StrictStr], Field(description="A continuation token to get next remaining membership user IDs. Returned only when there are remaining user IDs that weren't returned in the userIds property in the previous request. The continuation token expires in 24 hours (86,400 seconds). ")] = None, limit : Annotated[Optional[conint(strict=True, le=1000, ge=1)], Field(description="The max number of items to return for this API call. The value is set to 300 by default, but the max acceptable value is 1000. ")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+        """get_joined_membership_users  # noqa: E501
+
+        Get a list of user IDs who joined the membership.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.get_joined_membership_users_with_http_info(membership_id, start, limit, async_req=True)
+        >>> result = thread.get()
+
+        :param membership_id: Membership plan ID. (required)
+        :type membership_id: int
+        :param start: A continuation token to get next remaining membership user IDs. Returned only when there are remaining user IDs that weren't returned in the userIds property in the previous request. The continuation token expires in 24 hours (86,400 seconds). 
+        :type start: str
+        :param limit: The max number of items to return for this API call. The value is set to 300 by default, but the max acceptable value is 1000. 
+        :type limit: int
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _preload_content: if False, the ApiResponse.data will
+                                 be set to none and raw_data will store the
+                                 HTTP response body without reading/decoding.
+                                 Default is True.
+        :type _preload_content: bool, optional
+        :param _return_http_data_only: response data instead of ApiResponse
+                                       object with status code, headers, etc
+        :type _return_http_data_only: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the authentication
+                              in the spec for a single request.
+        :type _request_auth: dict, optional
+        :type _content_type: string, optional: force content-type for the request
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: tuple(GetJoinedMembershipUsersResponse, status_code(int), headers(HTTPHeaderDict))
+        """
+
+        _host = self.line_base_path
+        _params = locals()
+
+        _all_params = [
+            'membership_id',
+            'start',
+            'limit'
+        ]
+        _all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
+            ]
+        )
+
+        # validate the arguments
+        for _key, _val in _params['kwargs'].items():
+            if _key not in _all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method get_joined_membership_users" % _key
+                )
+            _params[_key] = _val
+        del _params['kwargs']
+
+        _collection_formats = {}
+
+        # process the path parameters
+        _path_params = {}
+        if _params['membership_id']:
+            _path_params['membershipId'] = _params['membership_id']
+
+
+        # process the query parameters
+        _query_params = []
+        if _params.get('start') is not None:  # noqa: E501
+            _query_params.append(('start', _params['start']))
+
+        if _params.get('limit') is not None:  # noqa: E501
+            _query_params.append(('limit', _params['limit']))
+
+        # process the header parameters
+        _header_params = dict(_params.get('_headers', {}))
+        # process the form parameters
+        _form_params = []
+        _files = {}
+        # process the body parameter
+        _body_params = None
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # authentication setting
+        _auth_settings = ['Bearer']  # noqa: E501
+
+        _response_types_map = {
+            '200': "GetJoinedMembershipUsersResponse",
+            '400': "ErrorResponse",
+            '404': "ErrorResponse",
+        }
+
+        return self.api_client.call_api(
+            '/v2/bot/membership/{membershipId}/users/ids', 'GET',
             _path_params,
             _query_params,
             _header_params,

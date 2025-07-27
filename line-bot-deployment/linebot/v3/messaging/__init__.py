@@ -44,7 +44,6 @@ from linebot.v3.messaging.models.app_type_demographic import AppTypeDemographic
 from linebot.v3.messaging.models.app_type_demographic_filter import AppTypeDemographicFilter
 from linebot.v3.messaging.models.area_demographic import AreaDemographic
 from linebot.v3.messaging.models.area_demographic_filter import AreaDemographicFilter
-from linebot.v3.messaging.models.audience_match_messages_request import AudienceMatchMessagesRequest
 from linebot.v3.messaging.models.audience_recipient import AudienceRecipient
 from linebot.v3.messaging.models.audio_message import AudioMessage
 from linebot.v3.messaging.models.bot_info_response import BotInfoResponse
@@ -99,6 +98,7 @@ from linebot.v3.messaging.models.gender_demographic_filter import GenderDemograp
 from linebot.v3.messaging.models.get_aggregation_unit_name_list_response import GetAggregationUnitNameListResponse
 from linebot.v3.messaging.models.get_aggregation_unit_usage_response import GetAggregationUnitUsageResponse
 from linebot.v3.messaging.models.get_followers_response import GetFollowersResponse
+from linebot.v3.messaging.models.get_joined_membership_users_response import GetJoinedMembershipUsersResponse
 from linebot.v3.messaging.models.get_membership_subscription_response import GetMembershipSubscriptionResponse
 from linebot.v3.messaging.models.get_message_content_transcoding_response import GetMessageContentTranscodingResponse
 from linebot.v3.messaging.models.get_webhook_endpoint_response import GetWebhookEndpointResponse

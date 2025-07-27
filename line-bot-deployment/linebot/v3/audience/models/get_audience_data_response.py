@@ -20,6 +20,7 @@ import json
 
 from typing import List, Optional
 from pydantic.v1 import BaseModel, Field, conlist
+from linebot.v3.audience.models.adaccount import Adaccount
 from linebot.v3.audience.models.audience_group import AudienceGroup
 from linebot.v3.audience.models.audience_group_job import AudienceGroupJob
 
@@ -30,8 +31,9 @@ class GetAudienceDataResponse(BaseModel):
     """
     audience_group: Optional[AudienceGroup] = Field(None, alias="audienceGroup")
     jobs: Optional[conlist(AudienceGroupJob, max_items=50)] = Field(None, description="An array of jobs. This array is used to keep track of each attempt to add new user IDs or IFAs to an audience for uploading user IDs. Empty array is returned for any other type of audience. Max: 50 ")
+    adaccount: Optional[Adaccount] = None
 
-    __properties = ["audienceGroup", "jobs"]
+    __properties = ["audienceGroup", "jobs", "adaccount"]
 
     class Config:
         """Pydantic configuration"""
@@ -67,6 +69,9 @@ class GetAudienceDataResponse(BaseModel):
                 if _item:
                     _items.append(_item.to_dict())
             _dict['jobs'] = _items
+        # override the default output from pydantic.v1 by calling `to_dict()` of adaccount
+        if self.adaccount:
+            _dict['adaccount'] = self.adaccount.to_dict()
         return _dict
 
     @classmethod
@@ -80,7 +85,8 @@ class GetAudienceDataResponse(BaseModel):
 
         _obj = GetAudienceDataResponse.parse_obj({
             "audience_group": AudienceGroup.from_dict(obj.get("audienceGroup")) if obj.get("audienceGroup") is not None else None,
-            "jobs": [AudienceGroupJob.from_dict(_item) for _item in obj.get("jobs")] if obj.get("jobs") is not None else None
+            "jobs": [AudienceGroupJob.from_dict(_item) for _item in obj.get("jobs")] if obj.get("jobs") is not None else None,
+            "adaccount": Adaccount.from_dict(obj.get("adaccount")) if obj.get("adaccount") is not None else None
         })
         return _obj
 
