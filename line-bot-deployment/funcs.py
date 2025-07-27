@@ -103,79 +103,88 @@ def makeDynamoDBTableItem_from_text(text, event):
     return item
 
 
-def makeDynamoDBTableItem_from_image(image, event):
+def makeDynamoDBTableItem_from_image(image_data, event):
     """
     This function is used to make a table item put into DynamoDB from image.
     """
     item = {}
 
-    # Set your Azure Document Intelligence endpoint and key from environment variables
-    endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
-    key = os.environ["AZURE_DOCUMENT_INTELLIGENCE_KEY"]
+    try:
+        # Set timeout for Azure client
+        endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
+        key = os.environ["AZURE_DOCUMENT_INTELLIGENCE_KEY"]
 
-    # Image -> json
-    # Call Azure Document Intelligence API to analyze the receipt
-    document_intelligence_client = DocumentIntelligenceClient(
-        endpoint=endpoint, credential=AzureKeyCredential(key)
-    )
-    poller = document_intelligence_client.begin_analyze_document(
-        "prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=image.read())
-    )
-    receipts = poller.result()
+        client = DocumentIntelligenceClient(
+            endpoint=endpoint,
+            credential=AzureKeyCredential(key)
+        )
 
-    # json -> DynamoDB item
-    # Convert response from Azure Document Intelligence API to DynamoDB item
-    # get userID, timestamp and groupID from LINE event
-    item['userID'] = event.source.user_id
-    item['timestamp'] = event.timestamp
-    item['groupID'] = event.source.group_id
+        # Add timeout handling
+        poller = client.begin_analyze_document(
+            "prebuilt-receipt",
+            AnalyzeDocumentRequest(bytes_source=image_data.getvalue())
+        )
 
-    # For almost all cases, there is only one receipt in the response.
-    for idx, receipt in enumerate(receipts.documents):
-        # Receipt Type
-        receipt_type = receipt.doc_type
-        if receipt_type:
-            item['receipt_type'] = receipt_type
+        # Wait with timeout
+        result = poller.result(timeout=45)  # 45 seconds max
 
-        # Merchant Name
-        merchant_name = receipt.fields.get("MerchantName")
-        if merchant_name:
-            item['merchant_name'] = merchant_name.value_string
+        # Process result and return item
+        # For almost all cases, there is only one receipt in the response.
+        for idx, receipt in enumerate(result.documents):
+            # Receipt Type
+            receipt_type = receipt.doc_type
+            if receipt_type:
+                item['receipt_type'] = receipt_type
 
-        # Transaction Date
-        transaction_date = receipt.fields.get("TransactionDate")
-        if transaction_date:
-            item['date'] = convert_transaction_date_to_string(transaction_date.value_date)
+            # Merchant Name
+            merchant_name = receipt.fields.get("MerchantName")
+            if merchant_name:
+                item['merchant_name'] = merchant_name.value_string
 
-        # Category
-        # If receipt type is "receipt.retailMeal", set category to "食費"
-        if receipt_type == "receipt.retailMeal":
-            item['category'] = "食費"
+            # Transaction Date
+            transaction_date = receipt.fields.get("TransactionDate")
+            if transaction_date:
+                item['date'] = convert_transaction_date_to_string(transaction_date.value_date)
 
-            """
-            If merchant name has some types of strings, set sub-category
-            For example:
-                "ヨークベニマル" -> "自炊"
-                "かましい" -> "自炊"
-                "かましん" -> "自炊"
-            """
-            if 'ヨークベニマル' in item['merchant_name']:
-                item['sub-category'] = "自炊"
-            elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
-                item['sub-category'] = "自炊"
+            # Category
+            # If receipt type is "receipt.retailMeal", set category to "食費"
+            if receipt_type == "receipt.retailMeal":
+                item['category'] = "食費"
+
+                """
+                If merchant name has some types of strings, set sub-category
+                For example:
+                    "ヨークベニマル" -> "自炊"
+                    "かましい" -> "自炊"
+                    "かましん" -> "自炊"
+                """
+                if 'ヨークベニマル' in item['merchant_name']:
+                    item['sub-category'] = "自炊"
+                elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
+                    item['sub-category'] = "自炊"
+                else:
+                    item['sub-category'] = "外食"
+
             else:
-                item['sub-category'] = "外食"
+                item['category'] = "-"
+                item['sub-category'] = "-"
 
-        else:
-            item['category'] = "-"
-            item['sub-category'] = "-"
+            # Price
+            price = receipt.fields.get("Total")
+            if price:
+                item['price'] = price.value_number
+            else:
+                item['price'] = 0
 
-        # Price
-        price = receipt.fields.get("Total")
-        if price:
-            item['price'] = price.value_number
-        else:
-            item['price'] = 0
+    except Exception as e:
+        item = {
+            'userID': event.source.user_id,
+            'timestamp': event.timestamp,
+            'groupID': event.source.group_id,
+            'category': 'Error',
+            'price': 0,
+            'memo': f'Image analysis failed: {str(e)}'
+        }
 
     return item
 
