@@ -172,7 +172,8 @@ def makeDynamoDBTableItem_from_image(image_data, event):
             # Price
             price = receipt.fields.get("Total")
             if price:
-                item['price'] = price.value_number
+                # price must be integer
+                item['price'] = int(price.value_number)
             else:
                 item['price'] = 0
 
