@@ -2,6 +2,10 @@ import re
 import datetime
 from zoneinfo import ZoneInfo
 import os
+# Add these imports for Azure Document Intelligence
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 
 
 def makeDynamoDBTableItem_from_text(text, event):

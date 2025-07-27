@@ -91,23 +91,11 @@ def handle_image(event):
         line_bot_api.reply_message(
             event.reply_token, TextSendMessage(text=response)
         )
-        
-        # 画像データのサイズや形式(jpg, pngなど)の情報を取得する
-        image_info = {
-            "size": image_data.getbuffer().nbytes,
-            "format": "jpg" if image_data.getvalue().startswith(b'\xff\xd8') else "png"
-        }
-
-        # 解析結果をユーザーに返信
-        response_text = f"画像を解析しました。\nサイズ: {image_info['size']}バイト\n形式: {image_info['format']}"
-        line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=response_text)
-        )
 
     except Exception as e:
         logger.error(f"Error processing image: {str(e)}")
         line_bot_api.reply_message(
-            event.reply_token, 
+            event.reply_token,
             TextSendMessage(text="画像の解析中にエラーが発生しました。")
         )
 
