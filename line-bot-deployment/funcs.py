@@ -143,8 +143,16 @@ def makeDynamoDBTableItem_from_image(image_data, event):
 
             # Transaction Date
             transaction_date = receipt.fields.get("TransactionDate")
-            if transaction_date:
-                item['date'] = convert_transaction_date_to_string(transaction_date.value_date)
+            # Transaction Time
+            transaction_time = receipt.fields.get("TransactionTime")
+
+            # If both dateand time exist, combine them.
+            if transaction_date and transaction_time:
+                # Combine date and time
+                item['date'] = convert_transaction_datetime_to_string(
+                    transaction_date.value_date,
+                    transaction_time.value_time
+                )
             else:
                 # If no transaction date found, use current date in Tokyo timezone
                 item['date'] = datetime.datetime.now(
@@ -174,11 +182,45 @@ def makeDynamoDBTableItem_from_image(image_data, event):
                 item['category'] = "-"
                 item['sub-category'] = "-"
 
-            # Price
+            """
+            Price
+
+            "Total": {
+                "type": "currency",
+                "valueCurrency": {
+                    "currencySymbol": "¥",
+                    "amount": 420,
+                    "currencyCode": "JPY"
+                },
+                "content": "¥420",
+                "boundingRegions": [
+                    {
+                        "pageNumber": 1,
+                        "polygon": [
+                            1357,
+                            1098,
+                            1567,
+                            1099,
+                            1567,
+                            1145,
+                            1357,
+                            1147
+                        ]
+                    }
+                ],
+                "confidence": 0.984,
+                "spans": [
+                    {
+                        "offset": 221,
+                        "length": 4
+                    }
+                ]
+            }
+            """
             price = receipt.fields.get("Total")
-            if price and price.value_number is not None:
+            if price and price.value_currency.amount is not None:
                 # price must be integer
-                item['price'] = int(price.value_number)
+                item['price'] = int(price.value_currency.amount)
             else:
                 item['price'] = 0
 
@@ -198,19 +240,67 @@ def makeDynamoDBTableItem_from_image(image_data, event):
     return item
 
 
-def convert_transaction_date_to_string(transaction_date):
+def convert_transaction_datetime_to_string(transaction_date, transaction_time):
     """
-    This function converts transaction date to string.
-    Format of returned value should be like '%Y-%m%d-%H%M'.
-
-    For example:
-        transaction_date : 2025-06-22
-        return value : '2025-0622-0000'
-    If time does not exist in transaction_date,
-    it will be set to '0000' like '2025-0622-0000'.
+    "TransactionDate": {
+        "type": "date",
+        "valueDate": "2025-07-29",
+        "content": "2025/07/29(",
+        "boundingRegions": [
+            {
+                "pageNumber": 1,
+                "polygon": [
+                    428,
+                    611,
+                    740,
+                    619,
+                    739,
+                    665,
+                    426,
+                    656
+                ]
+            }
+        ],
+        "confidence": 0.989,
+        "spans": [
+            {
+                "offset": 101,
+                "length": 11
+            }
+        ]
+    },
+    "TransactionTime": {
+        "type": "time",
+        "valueTime": "07:58:00",
+        "content": "07:58",
+        "boundingRegions": [
+            {
+                "pageNumber": 1,
+                "polygon": [
+                    843,
+                    620,
+                    967,
+                    620,
+                    967,
+                    667,
+                    842,
+                    666
+                ]
+            }
+        ],
+        "confidence": 0.99,
+        "spans": [
+            {
+                "offset": 115,
+                "length": 5
+            }
+        ]
+    }
     """
-    if isinstance(transaction_date, datetime.date):
-        return transaction_date.strftime('%Y-%m%d') + '-0000'
+    # Convert date and time to string in the format 'YYYY-MMDD-HHMM'
+    date_str = transaction_date.strftime('%Y-%m%d')
+    time_str = transaction_time.strftime('%H%M')
+    return f"{date_str}-{time_str}"
 
 
 def makeResponseMessage(item):

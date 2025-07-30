@@ -1,6 +1,7 @@
 analysis/
 python/
 kakeibot-weekly/
+.vscode/
 info.*
 zip-command.*
 zip-command-for-weekly.*
