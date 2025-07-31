@@ -131,22 +131,19 @@ def makeDynamoDBTableItem_from_image(image_data, event):
         # Process result and return item
         # For almost all cases, there is only one receipt in the response.
         for idx, receipt in enumerate(result.documents):
-            # Receipt Type
-            receipt_type = receipt.doc_type
-            if receipt_type:
-                item['receipt_type'] = receipt_type
 
             # Merchant Name
             merchant_name = receipt.fields.get("MerchantName")
             if merchant_name:
                 item['merchant_name'] = merchant_name.value_string
 
+            # Datetime
             # Transaction Date
             transaction_date = receipt.fields.get("TransactionDate")
             # Transaction Time
             transaction_time = receipt.fields.get("TransactionTime")
 
-            # If both dateand time exist, combine them.
+            # If both date and time exist, combine them.
             if transaction_date and transaction_time:
                 # Combine date and time
                 item['date'] = convert_transaction_datetime_to_string(
@@ -160,31 +157,10 @@ def makeDynamoDBTableItem_from_image(image_data, event):
                 ).strftime('%Y-%m%d-%H%M')
 
             # Category
-            # If receipt type is "receipt.retailMeal", set category to "食費"
-            if receipt_type == "receipt.retailMeal":
-                item['category'] = "食費"
+            item = get_category(item, receipt)
 
-                """
-                If merchant name has some types of strings, set sub-category
-                For example:
-                    "ヨークベニマル" -> "自炊"
-                    "かましい" -> "自炊"
-                    "かましん" -> "自炊"
-                """
-                if 'ヨークベニマル' in item['merchant_name']:
-                    item['sub-category'] = "自炊"
-                elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
-                    item['sub-category'] = "自炊"
-                else:
-                    item['sub-category'] = "外食"
-
-            else:
-                item['category'] = "-"
-                item['sub-category'] = "-"
-
+            # Price
             """
-            Price
-
             "Total": {
                 "type": "currency",
                 "valueCurrency": {
@@ -318,3 +294,35 @@ def makeResponseMessage(item):
         + tmp_response
 
     return response
+
+
+def get_category(item, receipt):
+    # Receipt Type
+    receipt_type = receipt.doc_type
+
+    if receipt_type:
+        item['receipt_type'] = receipt_type
+
+        # If receipt type is "receipt.retailMeal", set category to "食費"
+        if receipt_type == "receipt.retailMeal":
+            item['category'] = "食費"
+
+            """
+            If merchant name has some types of strings, set sub-category
+            For example:
+                "ヨークベニマル" -> "自炊"
+                "かましい" -> "自炊"
+                "かましん" -> "自炊"
+            """
+            if 'ヨークベニマル' in item['merchant_name']:
+                item['sub-category'] = "自炊"
+            elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
+                item['sub-category'] = "自炊"
+            else:
+                item['sub-category'] = "外食"
+
+        else:
+            item['category'] = "-"
+            item['sub-category'] = "-"
+        
+        return item
