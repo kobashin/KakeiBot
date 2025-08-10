@@ -313,10 +313,13 @@ def get_category(item, receipt):
                 "ヨークベニマル" -> "自炊"
                 "かましい" -> "自炊"
                 "かましん" -> "自炊"
+                "OTANI" -> "自炊"
             """
             if 'ヨークベニマル' in item['merchant_name']:
                 item['sub-category'] = "自炊"
             elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
+                item['sub-category'] = "自炊"
+            elif 'OTANI' in item['merchant_name']:
                 item['sub-category'] = "自炊"
             else:
                 item['sub-category'] = "外食"
