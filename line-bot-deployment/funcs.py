@@ -40,10 +40,16 @@ def makeDynamoDBTableItem_from_text(text, event):
     '''
         userID and timestamp
     '''
-    # get userID, timestamp and groupID from LINE event
-    item['userID'] = event.source.user_id
-    item['timestamp'] = event.timestamp
-    item['groupID'] = event.source.group_id
+    # If event isn't empty, get userID, timestamp and groupID from LINE event
+    if event:
+        item['userID'] = event.source.user_id
+        item['timestamp'] = event.timestamp
+        item['groupID'] = event.source.group_id
+    # In case of being called directly from terminal, not via LINE event
+    else:
+        item['userID'] = '-'
+        item['timestamp'] = '-'
+        item['groupID'] = '-'
 
     '''
         date
@@ -103,11 +109,25 @@ def makeDynamoDBTableItem_from_text(text, event):
     return item
 
 
-def makeDynamoDBTableItem_from_image(image_data, event):
+def makeDynamoDBTableItem_from_image(image_data, event=None):
     """
     This function is used to make a table item put into DynamoDB from image.
     """
     item = {}
+
+    '''
+        userID and timestamp
+    '''
+    # If event isn't empty, get userID, timestamp and groupID from LINE event
+    if event:
+        item['userID'] = event.source.user_id
+        item['timestamp'] = event.timestamp
+        item['groupID'] = event.source.group_id
+    # In case of being called directly from terminal, not via LINE event
+    else:
+        item['userID'] = '-'
+        item['timestamp'] = '-'
+        item['groupID'] = '-'
 
     try:
         # Set timeout for Azure client
@@ -119,11 +139,30 @@ def makeDynamoDBTableItem_from_image(image_data, event):
             credential=AzureKeyCredential(key)
         )
 
-        # Add timeout handling
-        poller = client.begin_analyze_document(
-            "prebuilt-receipt",
-            AnalyzeDocumentRequest(bytes_source=image_data.getvalue())
-        )
+        # If image_data is an object of BytesIO
+        if hasattr(image_data, 'getvalue'):
+            poller = client.begin_analyze_document(
+                "prebuilt-receipt",
+                AnalyzeDocumentRequest(bytes_source=image_data.getvalue())
+            )
+
+        # If image_data is the path to image file
+        '''
+            azure.core.exceptions.HttpResponseError: (InvalidRequest) Invalid request.
+            Code: InvalidRequest
+            Message: Invalid request.
+            Inner error: {
+                "code": "InvalidContentLength",
+                "message": "The input image is too large. 
+                    Refer to documentation for the maximum file size."
+            }
+        '''
+        if isinstance(image_data, str):
+            with open(image_data, "rb") as f:
+                poller = client.begin_analyze_document(
+                    "prebuilt-receipt",
+                    AnalyzeDocumentRequest(bytes_source=f.read())
+                )
 
         # Wait with timeout
         result = poller.result(timeout=45)  # 45 seconds max
@@ -200,18 +239,17 @@ def makeDynamoDBTableItem_from_image(image_data, event):
             else:
                 item['price'] = 0
 
+            # evidence
+            item['evidence'] = receipt
+
     except Exception as e:
-        item = {
-            'userID': event.source.user_id,
-            'timestamp': event.timestamp,
-            'groupID': event.source.group_id,
-            'date': datetime.datetime.now(
+        item['date'] = datetime.datetime.now(
                 ZoneInfo("Asia/Tokyo")
-            ).strftime('%Y-%m%d-%H%M'),
-            'category': 'Error',
-            'price': 0,
-            'memo': f'Image analysis failed: {str(e)}'
-        }
+            ).strftime('%Y-%m%d-%H%M')
+        
+        item['category'] = 'Error'
+        item['price'] = 0
+        item['memo'] = f'Image analysis failed: {str(e)}'
 
     return item
 
@@ -317,10 +355,13 @@ def get_category(item, receipt):
             """
             if 'ヨークベニマル' in item['merchant_name']:
                 item['sub-category'] = "自炊"
+                item['memo'] = "ヨークベニマル"
             elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
                 item['sub-category'] = "自炊"
+                item['memo'] = "かましん"
             elif 'OTANI' in item['merchant_name']:
                 item['sub-category'] = "自炊"
+                item['memo'] = "オータニ"
             else:
                 item['sub-category'] = "外食"
 
@@ -329,3 +370,13 @@ def get_category(item, receipt):
             item['sub-category'] = "-"
         
         return item
+
+
+def print_item(item):
+    """
+    This function is used to print item
+    """
+    print("item:")
+    for key, value in item.items():
+        print(f"{key}: {value}")
+    print("\n")

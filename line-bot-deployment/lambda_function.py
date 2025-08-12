@@ -79,7 +79,7 @@ def handle_image(event):
         image_data.seek(0)
 
         # Azure Custom Visionで画像を解析
-        item = makeDynamoDBTableItem_from_image(image_data, event)
+        item = makeDynamoDBTableItem_from_image(image_data, event=event)
 
         # make a response for LINE bot
         response = makeResponseMessage(item)
