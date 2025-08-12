@@ -38,7 +38,7 @@ def makeDynamoDBTableItem_from_text(text, event):
     splitted = text.split('\n')
 
     '''
-        userID and timestamp
+        userID, timestamp and groupID
     '''
     # If event isn't empty, get userID, timestamp and groupID from LINE event
     if event:
@@ -116,7 +116,7 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
     item = {}
 
     '''
-        userID and timestamp
+        userID, timestamp and groupID
     '''
     # If event isn't empty, get userID, timestamp and groupID from LINE event
     if event:
@@ -158,11 +158,11 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
             }
         '''
         if isinstance(image_data, str):
-            with open(image_data, "rb") as f:
-                poller = client.begin_analyze_document(
-                    "prebuilt-receipt",
-                    AnalyzeDocumentRequest(bytes_source=f.read())
-                )
+            poller = client.begin_analyze_document(
+                "prebuilt-receipt",
+                AnalyzeDocumentRequest(
+                    bytes_source=open(image_data, 'rb').read())
+            )
 
         # Wait with timeout
         result = poller.result(timeout=45)  # 45 seconds max
@@ -171,7 +171,9 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
         # For almost all cases, there is only one receipt in the response.
         for idx, receipt in enumerate(result.documents):
 
-            # Merchant Name
+            '''
+                date
+            '''
             merchant_name = receipt.fields.get("MerchantName")
             if merchant_name:
                 item['merchant_name'] = merchant_name.value_string
@@ -195,10 +197,14 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
                     ZoneInfo("Asia/Tokyo")
                 ).strftime('%Y-%m%d-%H%M')
 
-            # Category
+            '''
+                category, sub-category and memo
+            '''
             item = get_category(item, receipt)
 
-            # Price
+            '''
+                price
+            '''
             """
             "Total": {
                 "type": "currency",
@@ -208,28 +214,6 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
                     "currencyCode": "JPY"
                 },
                 "content": "¥420",
-                "boundingRegions": [
-                    {
-                        "pageNumber": 1,
-                        "polygon": [
-                            1357,
-                            1098,
-                            1567,
-                            1099,
-                            1567,
-                            1145,
-                            1357,
-                            1147
-                        ]
-                    }
-                ],
-                "confidence": 0.984,
-                "spans": [
-                    {
-                        "offset": 221,
-                        "length": 4
-                    }
-                ]
             }
             """
             price = receipt.fields.get("Total")
@@ -239,7 +223,9 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
             else:
                 item['price'] = 0
 
-            # evidence
+            '''
+                evidence
+            '''
             item['evidence'] = receipt
 
     except Exception as e:
@@ -260,21 +246,9 @@ def convert_transaction_datetime_to_string(transaction_date, transaction_time):
         "type": "date",
         "valueDate": "2025-07-29",
         "content": "2025/07/29(",
-        "boundingRegions": [
-            {
-                "pageNumber": 1,
-                "polygon": [
-                    428,
-                    611,
-                    740,
-                    619,
-                    739,
-                    665,
-                    426,
-                    656
-                ]
-            }
-        ],
+        
+        ...
+
         "confidence": 0.989,
         "spans": [
             {
@@ -287,21 +261,9 @@ def convert_transaction_datetime_to_string(transaction_date, transaction_time):
         "type": "time",
         "valueTime": "07:58:00",
         "content": "07:58",
-        "boundingRegions": [
-            {
-                "pageNumber": 1,
-                "polygon": [
-                    843,
-                    620,
-                    967,
-                    620,
-                    967,
-                    667,
-                    842,
-                    666
-                ]
-            }
-        ],
+
+        ...
+
         "confidence": 0.99,
         "spans": [
             {
@@ -312,6 +274,13 @@ def convert_transaction_datetime_to_string(transaction_date, transaction_time):
     }
     """
     # Convert date and time to string in the format 'YYYY-MMDD-HHMM'
+    # Check if both date and time are not None
+    if transaction_date is None or transaction_time is None:
+        # Fall back to current time if either is None
+        import datetime
+        from zoneinfo import ZoneInfo
+        return datetime.datetime.now(ZoneInfo("Asia/Tokyo")).strftime('%Y-%m%d-%H%M')
+    
     date_str = transaction_date.strftime('%Y-%m%d')
     time_str = transaction_time.strftime('%H%M')
     return f"{date_str}-{time_str}"
@@ -336,13 +305,14 @@ def makeResponseMessage(item):
 
 def get_category(item, receipt):
     # Receipt Type
-    receipt_type = receipt.doc_type
+    tmp_receipt_type = receipt.fields.get("ReceiptType")
+    receipt_type = tmp_receipt_type.value_string
 
     if receipt_type:
         item['receipt_type'] = receipt_type
 
-        # If receipt type is "receipt.retailMeal", set category to "食費"
-        if receipt_type == "receipt.retailMeal":
+        # If receipt type is "Meal", set category to "食費"
+        if receipt_type == "Meal":
             item['category'] = "食費"
 
             """
@@ -362,8 +332,24 @@ def get_category(item, receipt):
             elif 'OTANI' in item['merchant_name']:
                 item['sub-category'] = "自炊"
                 item['memo'] = "オータニ"
+            elif 'たいらや' in item['merchant_name'] or 'だいらや' in item['merchant_name']:
+                item['sub-category'] = "自炊"
+                item['memo'] = "たいらや"
             else:
                 item['sub-category'] = "外食"
+
+        elif receipt_type in ["Healthcare", "Supplies"]:
+            item['category'] = "日用品"
+            item['sub-category'] = "-"
+            
+            if 'カワチ' in item['merchant_name']:
+                item['memo'] = "カワチ"
+
+            elif 'マツモトキヨシ' in item['merchant_name']:
+                item['memo'] = "マツモトキヨシ"
+
+            else:
+                item['memo'] = "-"
 
         else:
             item['category'] = "-"
