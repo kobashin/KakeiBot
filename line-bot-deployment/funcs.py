@@ -231,8 +231,8 @@ def make_table_item_from_image(image_data, event=None):
             # price
             item = get_price(item, receipt)
 
-            # evidence
-            item['evidence'] = receipt
+            # Note: Removed evidence field to avoid DynamoDB float/complex object issues
+            # item['evidence'] = receipt  # This causes "Float types not supported" error
 
     except Exception as e:
         item['date'] = datetime.datetime.now(
