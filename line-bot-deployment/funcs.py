@@ -170,69 +170,28 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
         # Process result and return item
         # For almost all cases, there is only one receipt in the response.
         for idx, receipt in enumerate(result.documents):
-
-            '''
-                date
-            '''
+            # merchant name
             merchant_name = receipt.fields.get("MerchantName")
             if merchant_name:
                 item['merchant_name'] = merchant_name.value_string
 
-            # Datetime
-            # Transaction Date
-            transaction_date = receipt.fields.get("TransactionDate")
-            # Transaction Time
-            transaction_time = receipt.fields.get("TransactionTime")
+            # date
+            item = get_date(item, receipt)
 
-            # If both date and time exist, combine them.
-            if transaction_date and transaction_time:
-                # Combine date and time
-                item['date'] = convert_transaction_datetime_to_string(
-                    transaction_date.value_date,
-                    transaction_time.value_time
-                )
-            else:
-                # If no transaction date found, use current date in Tokyo timezone
-                item['date'] = datetime.datetime.now(
-                    ZoneInfo("Asia/Tokyo")
-                ).strftime('%Y-%m%d-%H%M')
-
-            '''
-                category, sub-category and memo
-            '''
+            # category, sub-category and memo
             item = get_category(item, receipt)
 
-            '''
-                price
-            '''
-            """
-            "Total": {
-                "type": "currency",
-                "valueCurrency": {
-                    "currencySymbol": "¥",
-                    "amount": 420,
-                    "currencyCode": "JPY"
-                },
-                "content": "¥420",
-            }
-            """
-            price = receipt.fields.get("Total")
-            if price and price.value_currency.amount is not None:
-                # price must be integer
-                item['price'] = int(price.value_currency.amount)
-            else:
-                item['price'] = 0
+            # price
+            item = get_price(item, receipt)
 
-            '''
-                evidence
-            '''
+            # evidence
             item['evidence'] = receipt
 
     except Exception as e:
         item['date'] = datetime.datetime.now(
                 ZoneInfo("Asia/Tokyo")
             ).strftime('%Y-%m%d-%H%M')
-        
+
         item['category'] = 'Error'
         item['price'] = 0
         item['memo'] = f'Image analysis failed: {str(e)}'
@@ -246,7 +205,7 @@ def convert_transaction_datetime_to_string(transaction_date, transaction_time):
         "type": "date",
         "valueDate": "2025-07-29",
         "content": "2025/07/29(",
-        
+
         ...
 
         "confidence": 0.989,
@@ -280,7 +239,7 @@ def convert_transaction_datetime_to_string(transaction_date, transaction_time):
         import datetime
         from zoneinfo import ZoneInfo
         return datetime.datetime.now(ZoneInfo("Asia/Tokyo")).strftime('%Y-%m%d-%H%M')
-    
+
     date_str = transaction_date.strftime('%Y-%m%d')
     time_str = transaction_time.strftime('%H%M')
     return f"{date_str}-{time_str}"
@@ -341,7 +300,7 @@ def get_category(item, receipt):
         elif receipt_type in ["Healthcare", "Supplies"]:
             item['category'] = "日用品"
             item['sub-category'] = "-"
-            
+
             if 'カワチ' in item['merchant_name']:
                 item['memo'] = "カワチ"
 
@@ -354,8 +313,52 @@ def get_category(item, receipt):
         else:
             item['category'] = "-"
             item['sub-category'] = "-"
-        
+
         return item
+
+
+def get_price(item, receipt):
+    """
+        "Total": {
+            "type": "currency",
+            "valueCurrency": {
+                "currencySymbol": "¥",
+                "amount": 420,
+                "currencyCode": "JPY"
+            },
+            "content": "¥420",
+        }
+    """
+    price = receipt.fields.get("Total")
+    if price and price.value_currency.amount is not None:
+        # price must be integer
+        item['price'] = int(price.value_currency.amount)
+    else:
+        item['price'] = 0
+
+    return item
+
+
+def get_date(item, receipt):
+    # Transaction Date
+    transaction_date = receipt.fields.get("TransactionDate")
+    # Transaction Time
+    transaction_time = receipt.fields.get("TransactionTime")
+
+    # If both date and time exist, combine them.
+    if transaction_date and transaction_time:
+        # Combine date and time
+        item['date'] = convert_transaction_datetime_to_string(
+            transaction_date.value_date,
+            transaction_time.value_time
+        )
+    else:
+        # If no transaction date found, use current date in Tokyo timezone
+        item['date'] = datetime.datetime.now(
+            ZoneInfo("Asia/Tokyo")
+        ).strftime('%Y-%m%d-%H%M')
+
+    return item
 
 
 def print_item(item):
