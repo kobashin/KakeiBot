@@ -4,7 +4,7 @@ kakeibot-weekly/
 .vscode/
 
 # Python cache and compiled files
-__pycache__/
+line-bot-deployment/__pycache__/
 *.py[cod]
 *.pyc
 *.pyo

@@ -11,20 +11,21 @@ import sys
 
 # Add the line-bot-deployment directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'line-bot-deployment'))
-from funcs import makeDynamoDBTableItem_from_image, print_item
+from funcs import make_table_item_from_image, print_item
+
 
 def debug_image_processing(image_path):
     """Debug function to check image processing"""
     from PIL import Image
-    
-    print(f"=== Image Debug Info ===")
+
+    print("=== Image Debug Info ===")
     print(f"File path: {image_path}")
     print(f"File exists: {os.path.exists(image_path)}")
-    
+
     if os.path.exists(image_path):
         file_size = os.path.getsize(image_path)
         print(f"File size: {file_size / (1024*1024):.2f} MB ({file_size:,} bytes)")
-        
+
         try:
             with Image.open(image_path) as img:
                 print(f"Image dimensions: {img.size[0]} x {img.size[1]} pixels")
@@ -32,7 +33,7 @@ def debug_image_processing(image_path):
                 print(f"Image mode: {img.mode}")
         except Exception as e:
             print(f"PIL Error: {e}")
-            
+
         try:
             with open(image_path, 'rb') as f:
                 content = f.read()
@@ -42,7 +43,7 @@ def debug_image_processing(image_path):
             print(f"File read error: {e}")
     else:
         print("❌ File does not exist!")
-    
+
     print("=" * 40)
 
 
@@ -84,13 +85,13 @@ check_environment()
 # Try to process the image
 print("📤 Attempting to process image...")
 try:
-    item = makeDynamoDBTableItem_from_image(local_image_path)
+    item = make_table_item_from_image(local_image_path)
     print("✅ Success!")
     print_item(item)
 except Exception as e:
     print(f"❌ Error occurred: {e}")
     print(f"Error type: {type(e).__name__}")
-    
+
     # Additional debugging for this specific error
     if "InvalidContentLength" in str(e):
         print("\n🔍 InvalidContentLength specific debugging:")
@@ -98,18 +99,18 @@ except Exception as e:
             with open(local_image_path, 'rb') as f:
                 content = f.read()
                 print(f"Actual bytes being sent: {len(content):,}")
-                
+
                 # Check if content is corrupted or has unexpected size
                 import hashlib
                 file_hash = hashlib.md5(content).hexdigest()
                 print(f"File MD5 hash: {file_hash}")
-                
+
                 # Check first few bytes to verify it's a valid image
                 magic_bytes = content[:10]
                 print(f"File magic bytes: {magic_bytes.hex()}")
-                
+
         except Exception as debug_err:
             print(f"Debug error: {debug_err}")
-    
+
     import traceback
     traceback.print_exc()

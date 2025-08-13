@@ -23,12 +23,12 @@ response = dynamodb.scan(
 """
     Each item is like that.
         {
-            'sub-category': {'S': '真一郎'}, 
-            'date': {'S': '2025-0501-1842'}, 
-            'userID': {'S': 'U55f2c6b5b...'}, 
-            'timestamp': {'N': '1746092545035'}, 
-            'category': {'S': '入金'}, 
-            'memo': {'S': '-'}, 
+            'sub-category': {'S': '真一郎'},
+            'date': {'S': '2025-0501-1842'},
+            'userID': {'S': 'U55f2c6b5b...'},
+            'timestamp': {'N': '1746092545035'},
+            'category': {'S': '入金'},
+            'memo': {'S': '-'},
             'price': {'S': '10000'}
         }
 """

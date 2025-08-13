@@ -8,7 +8,7 @@ from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 
 
-def makeDynamoDBTableItem_from_text(text, event):
+def make_table_item_from_text(text, event):
     """
     This function is used to make a table item put into DynamoDB from text.
 
@@ -109,7 +109,7 @@ def makeDynamoDBTableItem_from_text(text, event):
     return item
 
 
-def makeDynamoDBTableItem_from_image(image_data, event=None):
+def make_table_item_from_image(image_data, event=None):
     """
     This function is used to make a table item put into DynamoDB from image.
     """
@@ -153,16 +153,63 @@ def makeDynamoDBTableItem_from_image(image_data, event=None):
             Message: Invalid request.
             Inner error: {
                 "code": "InvalidContentLength",
-                "message": "The input image is too large. 
+                "message": "The input image is too large.
                     Refer to documentation for the maximum file size."
             }
+
+            Max document size is 4MB for Free(F0) tier.
+            https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/service-limits?view=doc-intel-4.0.0
         '''
         if isinstance(image_data, str):
-            poller = client.begin_analyze_document(
-                "prebuilt-receipt",
-                AnalyzeDocumentRequest(
-                    bytes_source=open(image_data, 'rb').read())
-            )
+            # check if it exists
+            if os.path.exists(image_data):
+                # get file size
+                tmp_file_size = os.path.getsize(image_data)
+                file_size_mb = tmp_file_size / (1024*1024)
+
+                # if file size is equal or more than 4MB, resize and send to AnalyzeDocumentRequest
+                if file_size_mb >= 4:
+                    # Resize image to reduce file size
+                    from PIL import Image
+                    import io
+
+                    print(f"Image size ({file_size_mb:.2f}MB) exceeds 4MB limit. Resizing...")
+
+                    with Image.open(image_data) as img:
+                        # Convert to RGB if necessary
+                        if img.mode in ('RGBA', 'P'):
+                            img = img.convert('RGB')
+
+                        # Calculate new dimensions (reduce to ~75% of original)
+                        new_width = int(img.width * 0.75)
+                        new_height = int(img.height * 0.75)
+
+                        # Resize image
+                        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+                        # Save to bytes with compression
+                        img_buffer = io.BytesIO()
+                        resized_img.save(img_buffer, format='JPEG', quality=85, optimize=True)
+                        resized_bytes = img_buffer.getvalue()
+
+                        print(f"Resized to {len(resized_bytes) / (1024*1024):.2f}MB")
+
+                        poller = client.begin_analyze_document(
+                            "prebuilt-receipt",
+                            AnalyzeDocumentRequest(bytes_source=resized_bytes)
+                        )
+
+                # if file size is within the limit, send it to AnalyzeDocumentRequest directory
+                else:
+                    poller = client.begin_analyze_document(
+                        "prebuilt-receipt",
+                        AnalyzeDocumentRequest(
+                            bytes_source=open(image_data, 'rb').read())
+                    )
+
+            else:
+                # If image_data is not a valid file path
+                raise ValueError("Invalid image file path")
 
         # Wait with timeout
         result = poller.result(timeout=45)  # 45 seconds max

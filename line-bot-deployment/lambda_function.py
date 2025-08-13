@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import boto3
-from funcs import makeDynamoDBTableItem_from_text, makeDynamoDBTableItem_from_image, makeResponseMessage
+from funcs import make_table_item_from_text, make_table_item_from_image, makeResponseMessage
 
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
@@ -12,7 +12,6 @@ from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageMessage
-import requests
 from io import BytesIO
 
 
@@ -50,7 +49,7 @@ def handle_message(event):
     # get message text
     tmp_text = event.message.text
     # make a table item put into DynamoDB
-    item = makeDynamoDBTableItem_from_text(tmp_text, event)
+    item = make_table_item_from_text(tmp_text, event)
     # make a response for LINE bot
     response = makeResponseMessage(item)
 
@@ -68,10 +67,10 @@ def handle_image(event):
     try:
         # 画像メッセージのIDを取得
         message_id = event.message.id
-        
+
         # LINE APIから画像コンテンツを取得
         message_content = line_bot_api.get_message_content(message_id)
-        
+
         # 画像データを読み込む
         image_data = BytesIO()
         for chunk in message_content.iter_content():
@@ -79,11 +78,11 @@ def handle_image(event):
         image_data.seek(0)
 
         # Azure Custom Visionで画像を解析
-        item = makeDynamoDBTableItem_from_image(image_data, event=event)
+        item = make_table_item_from_image(image_data, event=event)
 
         # make a response for LINE bot
         response = makeResponseMessage(item)
-        
+
         # DynamoDBに登録
         table.put_item(Item=item)
 
