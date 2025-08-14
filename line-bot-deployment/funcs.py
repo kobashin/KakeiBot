@@ -130,89 +130,10 @@ def make_table_item_from_image(image_data, event=None):
         item['groupID'] = '-'
 
     try:
-        # Set timeout for Azure client
-        endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
-        key = os.environ["AZURE_DOCUMENT_INTELLIGENCE_KEY"]
+        # Set Azure client
+        client = set_azure_client()
 
-        client = DocumentIntelligenceClient(
-            endpoint=endpoint,
-            credential=AzureKeyCredential(key)
-        )
-
-        # If image_data is an object of BytesIO
-        if hasattr(image_data, 'getvalue'):
-            poller = client.begin_analyze_document(
-                "prebuilt-receipt",
-                AnalyzeDocumentRequest(bytes_source=image_data.getvalue())
-            )
-
-        # If image_data is the path to image file
-        '''
-            azure.core.exceptions.HttpResponseError: (InvalidRequest) Invalid request.
-            Code: InvalidRequest
-            Message: Invalid request.
-            Inner error: {
-                "code": "InvalidContentLength",
-                "message": "The input image is too large.
-                    Refer to documentation for the maximum file size."
-            }
-
-            Max document size is 4MB for Free(F0) tier.
-            https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/service-limits?view=doc-intel-4.0.0
-        '''
-        if isinstance(image_data, str):
-            # check if it exists
-            if os.path.exists(image_data):
-                # get file size
-                tmp_file_size = os.path.getsize(image_data)
-                file_size_mb = tmp_file_size / (1024*1024)
-
-                # if file size is equal or more than 4MB, resize and send to AnalyzeDocumentRequest
-                if file_size_mb >= 4:
-                    # Resize image to reduce file size
-                    from PIL import Image
-                    import io
-
-                    print(f"Image size ({file_size_mb:.2f}MB) exceeds 4MB limit. Resizing...")
-
-                    with Image.open(image_data) as img:
-                        # Convert to RGB if necessary
-                        if img.mode in ('RGBA', 'P'):
-                            img = img.convert('RGB')
-
-                        # Calculate new dimensions (reduce to ~75% of original)
-                        new_width = int(img.width * 0.75)
-                        new_height = int(img.height * 0.75)
-
-                        # Resize image
-                        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-                        # Save to bytes with compression
-                        img_buffer = io.BytesIO()
-                        resized_img.save(img_buffer, format='JPEG', quality=85, optimize=True)
-                        resized_bytes = img_buffer.getvalue()
-
-                        print(f"Resized to {len(resized_bytes) / (1024*1024):.2f}MB")
-
-                        poller = client.begin_analyze_document(
-                            "prebuilt-receipt",
-                            AnalyzeDocumentRequest(bytes_source=resized_bytes)
-                        )
-
-                # if file size is within the limit, send it to AnalyzeDocumentRequest directory
-                else:
-                    poller = client.begin_analyze_document(
-                        "prebuilt-receipt",
-                        AnalyzeDocumentRequest(
-                            bytes_source=open(image_data, 'rb').read())
-                    )
-
-            else:
-                # If image_data is not a valid file path
-                raise ValueError("Invalid image file path")
-
-        # Wait with timeout
-        result = poller.result(timeout=45)  # 45 seconds max
+        result = begin_analyze_document(client, image_data)
 
         # Process result and return item
         # For almost all cases, there is only one receipt in the response.
@@ -416,3 +337,138 @@ def print_item(item):
     for key, value in item.items():
         print(f"{key}: {value}")
     print("\n")
+
+
+def debug_image_processing(image_path):
+    """Debug function to check image processing"""
+    from PIL import Image
+
+    print("=== Image Debug Info ===")
+    print(f"File path: {image_path}")
+    print(f"File exists: {os.path.exists(image_path)}")
+
+    if os.path.exists(image_path):
+        file_size = os.path.getsize(image_path)
+        print(f"File size: {file_size / (1024*1024):.2f} MB ({file_size:,} bytes)")
+
+        try:
+            with Image.open(image_path) as img:
+                print(f"Image dimensions: {img.size[0]} x {img.size[1]} pixels")
+                print(f"Image format: {img.format}")
+                print(f"Image mode: {img.mode}")
+        except Exception as e:
+            print(f"PIL Error: {e}")
+
+        try:
+            with open(image_path, 'rb') as f:
+                content = f.read()
+                print(f"Raw file content size: {len(content):,} bytes")
+                print(f"Content matches file size: {len(content) == file_size}")
+        except Exception as e:
+            print(f"File read error: {e}")
+    else:
+        print("❌ File does not exist!")
+
+    print("=" * 40)
+
+
+def check_environment():
+    """Check Azure environment variables"""
+    print("=== Environment Check ===")
+    endpoint = os.environ.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
+    key = os.environ.get("AZURE_DOCUMENT_INTELLIGENCE_KEY")
+    print(f"Endpoint set: {bool(endpoint)}")
+    print(f"Key set: {bool(key)}")
+    if endpoint:
+        print(f"Endpoint: {endpoint}")
+    print("=" * 40)
+
+
+def set_azure_client():
+    endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
+    key = os.environ["AZURE_DOCUMENT_INTELLIGENCE_KEY"]
+
+    client = DocumentIntelligenceClient(
+        endpoint=endpoint,
+        credential=AzureKeyCredential(key)
+    )
+
+    return client
+
+
+def begin_analyze_document(client, image_data):
+    # If image_data is an object of BytesIO
+    if hasattr(image_data, 'getvalue'):
+        poller = client.begin_analyze_document(
+            "prebuilt-receipt",
+            AnalyzeDocumentRequest(bytes_source=image_data.getvalue())
+        )
+
+    # If image_data is the path to image file
+    '''
+        azure.core.exceptions.HttpResponseError: (InvalidRequest) Invalid request.
+        Code: InvalidRequest
+        Message: Invalid request.
+        Inner error: {
+            "code": "InvalidContentLength",
+            "message": "The input image is too large.
+                Refer to documentation for the maximum file size."
+        }
+
+        Max document size is 4MB for Free(F0) tier.
+        https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/service-limits?view=doc-intel-4.0.0
+    '''
+    if isinstance(image_data, str):
+        # check if it exists
+        if os.path.exists(image_data):
+            # get file size
+            tmp_file_size = os.path.getsize(image_data)
+            file_size_mb = tmp_file_size / (1024*1024)
+
+            # if file size is equal or more than 4MB, resize and send to AnalyzeDocumentRequest
+            if file_size_mb >= 4:
+                # Resize image to reduce file size
+                from PIL import Image
+                import io
+
+                print(f"Image size ({file_size_mb:.2f}MB) exceeds 4MB limit. Resizing...")
+
+                with Image.open(image_data) as img:
+                    # Convert to RGB if necessary
+                    if img.mode in ('RGBA', 'P'):
+                        img = img.convert('RGB')
+
+                    # Calculate new dimensions (reduce to ~75% of original)
+                    new_width = int(img.width * 0.75)
+                    new_height = int(img.height * 0.75)
+
+                    # Resize image
+                    resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+                    # Save to bytes with compression
+                    img_buffer = io.BytesIO()
+                    resized_img.save(img_buffer, format='JPEG', quality=85, optimize=True)
+                    resized_bytes = img_buffer.getvalue()
+
+                    print(f"Resized to {len(resized_bytes) / (1024*1024):.2f}MB")
+
+                    poller = client.begin_analyze_document(
+                        "prebuilt-receipt",
+                        AnalyzeDocumentRequest(bytes_source=resized_bytes)
+                    )
+
+            # if file size is within the limit, send it to AnalyzeDocumentRequest directory
+            else:
+                poller = client.begin_analyze_document(
+                    "prebuilt-receipt",
+                    AnalyzeDocumentRequest(
+                        bytes_source=open(image_data, 'rb').read())
+                )
+
+        else:
+            # If image_data is not a valid file path
+            raise ValueError("Invalid image file path")
+
+    # Wait with timeout
+    result = poller.result(timeout=45)  # 45 seconds max
+    return result
