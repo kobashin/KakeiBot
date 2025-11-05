@@ -56,12 +56,20 @@ def make_table_item_from_text(text, event):
     '''
     # for each splitted item, check if it is date.
     # if it is, treat it as date.
-    is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{4}-[0-9]{4}$', item)) for item
+    is_date = [bool(re.match(r'^[0-9]{4}-[0-9]{4}(-[0-9]{4})?$', item)) for item
                in splitted]
 
     # if True in is_date, get the date
     if True in is_date:
-        item['date'] = splitted[is_date.index(True)]
+        # item['date'] = splitted[is_date.index(True)]
+        tmp_item_date = splitted[is_date.index(True)]
+
+        # if time is not specified, fill it with '-1200'
+        if bool(re.match(r'^[0-9]{4}-[0-9]{4}$', tmp_item_date)):
+            tmp_item_date += '-1200'
+
+        item['date'] = tmp_item_date
+
         splitted = splitted[1:]
     else:
         # if there is no date, use today's date like 'YYYY-MMDD-hhmm'
