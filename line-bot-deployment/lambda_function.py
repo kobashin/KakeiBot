@@ -101,6 +101,11 @@ def handle_image(event):
 
 def lambda_handler(event, context):
 
+    '''
+        The structure of event is described here.
+        https://developers.line.biz/ja/reference/messaging-api/#message-event
+    '''
+
     # ヘッダーにx-line-signatureがあることを確認
     if 'x-line-signature' in event['headers']:
         signature = event['headers']['x-line-signature']
@@ -110,6 +115,8 @@ def lambda_handler(event, context):
     logger.info(body)
 
     try:
+        # WebhookHandler jedges type of the event from LINE
+        # and call corresponding handler(handle_message/handle_image).
         webhook_handler.handle(body, signature)
     except InvalidSignatureError:
         # 署名を検証した結果がLINEプラットフォームからのWebhookでなければ400を返す
