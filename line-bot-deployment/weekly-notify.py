@@ -39,6 +39,16 @@ start_time_str_short = start_time.strftime('%m%d')
 end_time_str_short = end_time.strftime('%m%d')
 
 
+def get_outline():
+    tmp_outline = "改修中です!!\nこのリンクを開いたら出費がグラフで見れるようになります!!\n" + \
+                  "https://q0cnb34id4.execute-api.us-east-1.amazonaws.com/prod/users \n"
+    tmp_outline += "先週({}~{})の出費".format(
+        start_time_str_short,
+        end_time_str_short,
+    )
+    return tmp_outline
+
+
 def get_food():
     response = dynamodb.scan(
         TableName='KakeiBot-Table',
@@ -137,9 +147,8 @@ def lambda_handler(event, context):
         "KakeiBot-Tableのアイテム数は" + str(table_item_count) + "件です。\n" + \
         "KakeiBot-Tableのサイズは" + str(table_size_bytes) + "バイトです。"
     """
-    message = "先週({}~{})の出費\n{}\n{}".format(
-        start_time_str_short,
-        end_time_str_short,
+    message = "{}\n{}\n{}".format(
+        get_outline(),
         get_food(),
         get_deposit()
     )
