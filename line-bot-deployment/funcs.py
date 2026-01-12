@@ -230,13 +230,19 @@ def make_table_item_from_image(image_data, event=None):
             if merchant_name:
                 item['merchant_name'] = merchant_name.value_string
 
-            # date
+            '''
+                Date
+            '''
             item = get_date(item, receipt)
 
-            # category, sub-category and memo
+            '''
+                category, sub-category and memo
+            '''
             item = get_category(item, receipt)
 
-            # price
+            '''
+                price
+            '''
             item = get_price(item, receipt)
 
             # Note: Removed evidence field to avoid DynamoDB float/complex object issues
