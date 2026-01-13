@@ -13,9 +13,10 @@ __pycache__/
 *$py.class
 
 info.*
-zip-command.*
-zip-command-for-weekly.*
-zip-command-for-layer.*
+zip_kakeibot_layer.bat
+zip_kakeibot_read_table.bat
+zip_kakeibot_weekly.bat
+zip_kakeibot.bat
 test_weekly-notify.py
 archive-for-weekly.*
 README_Internal.md

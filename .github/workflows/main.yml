@@ -44,6 +44,15 @@ jobs:
           echo "Uploading kakeibot-weekly.zip to S3..."
           aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
 
+      # update Lambda function code
+      # layer.zip won' be uploaded automatically because it is not frequently updated.
+      - name: Update Lambda Functions
+        run: |
+          echo "Updating kakeibot-function..."
+          aws lambda update-function-code --function-name kakeibot-function --s3-bucket bucket-kakeibot --s3-key line-bot-deployment.zip
+          echo "Updating kakeibot-weekly..."
+          aws lambda update-function-code --function-name kakeibot-weekly --s3-bucket bucket-kakeibot --s3-key kakeibot-weekly.zip
+
   upload-kakeibot-weekly-zip:
     if: github.ref == 'refs/heads/feature-weekly-notify'
     runs-on: ubuntu-latest
@@ -68,3 +77,9 @@ jobs:
         run: |
           echo "Uploading kakeibot-weekly.zip to S3..."
           aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
+
+      # update Lambda function code
+      - name: Update Lambda Function
+        run: |
+          echo "Updating kakeibot-weekly..."
+          aws lambda update-function-code --function-name kakeibot-weekly --s3-bucket bucket-kakeibot --s3-key kakeibot-weekly.zip
