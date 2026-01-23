@@ -227,8 +227,8 @@ def lambda_handler(event, context):
         path = event.get('path', '/')
         print(f"Path value: {path}")
         
-        # HTMLページの表示 - ルートパス（/）にアクセスするとダッシュボードが表示
-        if path == '/' or path == '':
+        # HTMLページの表示 - ルートパス（/）または /users にアクセスするとダッシュボードが表示
+        if path == '/' or path == '' or path == '/users':
             return {
                 'statusCode': 200,
                 'headers': {
@@ -239,7 +239,7 @@ def lambda_handler(event, context):
             }
         
         # JSONデータAPI - /api/dataエンドポイントでJSONを返す
-        elif path == '/api/data':
+        elif path == '/api/data' or path == '/users/api/data':
             items = get_table_data()
             return {
                 'statusCode': 200,
