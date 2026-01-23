@@ -220,8 +220,12 @@ def get_table_data():
 
 
 def lambda_handler(event, context):
+    # デバッグ用ログ出力
+    print(f"Received event: {json.dumps(event)}")
+    
     try:
         path = event.get('path', '/')
+        print(f"Path value: {path}")
         
         # HTMLページの表示 - ルートパス（/）にアクセスするとダッシュボードが表示
         if path == '/' or path == '':
