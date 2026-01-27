@@ -9,11 +9,14 @@ KakeiBotは、LINEメッセージ（テキスト・画像）を受け取り、�
 
 <!-- Insert image -->
 
-出費の記録<br>
+出費の記録をKakeiBotに追加する<br>
 <img src="./img/record_01.png" width="300" />
-<br>毎週の出費の記録<br>
+<br>先週の出費の記録をレポートする<br>
 <img src="./img/weekly_notify_01.png" width="300" />
-
+<br>集計結果をまとめたダッシュボードへのリンクを載せる<br>
+<img src="./img/Kakeibot-chat.png" width="300" />
+<br>ダッシュボードの中身<br>
+<img src="./img/Kakeibot-dashboard.png" width="300" />
 ---
 
 ## シーケンス図（Mermaid）
@@ -69,7 +72,13 @@ sequenceDiagram
 ### 3. 週次レポート
 - 別のLambda関数が週に一度自動実行（EventBridgeでスケジュール）
 - DynamoDBから一週間分のデータを集計
-- LINEグループにサマリーを送信
+- LINEグループにサマリーと以下のダッシュボードへのリンクを送信
+
+### 4. データ分析ダッシュボード
+- API Gateway + Lambda (read-kakeibot-table) でWebダッシュボードを提供
+- DynamoDBに保存されたデータをブラウザ上でグラフ表示
+- Chart.jsを使用してカテゴリ別アイテム数を棒グラフで可視化
+- レスポンシブ対応でモバイルからも閲覧可能
 
 ---
 
