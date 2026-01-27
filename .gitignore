@@ -1,6 +1,8 @@
+.gitinore
 analysis/
 python/
 kakeibot-weekly/
+read-kakeibot-table/
 .vscode/
 
 # Python cache and compiled files
