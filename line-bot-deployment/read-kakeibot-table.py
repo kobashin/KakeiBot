@@ -116,7 +116,9 @@ HTML_TEMPLATE = """
         // Fetch data from API endpoint
         async function fetchData() {
             try {
-                const response = await fetch(window.location.href.replace(/\\/$/, '') + '/api/data');
+                // 現在のURLのパスを /api/data に置き換える
+                const baseUrl = window.location.origin + window.location.pathname.replace(/\\/users$/, '/users/api/data');
+                const response = await fetch(baseUrl);
                 const data = await response.json();
                 
                 if (response.ok) {

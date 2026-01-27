@@ -23,6 +23,8 @@ jobs:
       # clone codes from repository
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 2  # 直前のコミットとの差分を取得するため
 
       - name: Set up AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -34,52 +36,90 @@ jobs:
       - name: Debug AWS CLI
         run: aws sts get-caller-identity
 
-      # upload line-bot-deployment.zip to the specified S3-bucket
+      # 差分のあるファイルを検出
+      - name: Detect changed files
+        id: changes
+        run: |
+          # 変更されたファイルを取得
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || echo "")
+          echo "Changed files: $CHANGED_FILES"
+          
+          # 各zipに関連するファイルの変更を検出
+          if echo "$CHANGED_FILES" | grep -qE "^line-bot-deployment/|^line-bot-deployment\.zip$"; then
+            echo "line_bot_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "line_bot_changed=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -qE "^layer\.zip$|^python/|^requirements\.txt$"; then
+            echo "layer_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "layer_changed=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -qE "^kakeibot-weekly/|^kakeibot-weekly\.zip$"; then
+            echo "weekly_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "weekly_changed=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -qE "^read-kakeibot-table/|^read-kakeibot-table\.zip$"; then
+            echo "read_table_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "read_table_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 差分があるファイルのみS3にアップロード
       - name: Upload to S3
         run: |
-          echo "Uploading to S3..."
-          aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
-          echo "Uploading layer.zip to S3..."
-          aws s3 cp layer.zip s3://bucket-kakeibot/layer.zip
-          echo "Uploading kakeibot-weekly.zip to S3..."
-          aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
+          if [ "${{ steps.changes.outputs.line_bot_changed }}" == "true" ]; then
+            echo "Uploading line-bot-deployment.zip to S3..."
+            aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
+          else
+            echo "Skipping line-bot-deployment.zip (no changes)"
+          fi
+          
+          if [ "${{ steps.changes.outputs.layer_changed }}" == "true" ]; then
+            echo "Uploading layer.zip to S3..."
+            aws s3 cp layer.zip s3://bucket-kakeibot/layer.zip
+          else
+            echo "Skipping layer.zip (no changes)"
+          fi
+          
+          if [ "${{ steps.changes.outputs.weekly_changed }}" == "true" ]; then
+            echo "Uploading kakeibot-weekly.zip to S3..."
+            aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
+          else
+            echo "Skipping kakeibot-weekly.zip (no changes)"
+          fi
+          
+          if [ "${{ steps.changes.outputs.read_table_changed }}" == "true" ]; then
+            echo "Uploading read-kakeibot-table.zip to S3..."
+            aws s3 cp read-kakeibot-table.zip s3://bucket-kakeibot/read-kakeibot-table.zip
+          else
+            echo "Skipping read-kakeibot-table.zip (no changes)"
+          fi
 
-      # update Lambda function code
-      # layer.zip won' be uploaded automatically because it is not frequently updated.
+      # 差分があるファイルのみLambda関数を更新
       - name: Update Lambda Functions
         run: |
-          echo "Updating kakeibot-function..."
-          aws lambda update-function-code --function-name kakeibot-function --s3-bucket bucket-kakeibot --s3-key line-bot-deployment.zip
-          echo "Updating kakeibot-weekly..."
-          aws lambda update-function-code --function-name kakeibot-weekly --s3-bucket bucket-kakeibot --s3-key kakeibot-weekly.zip
-
-  upload-kakeibot-weekly-zip:
-    if: github.ref == 'refs/heads/feature-weekly-notify'
-    runs-on: ubuntu-latest
-
-    steps:
-      # clone codes from repository
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      # check if the credentials are set correctly
-      - name: Debug AWS CLI
-        run: aws sts get-caller-identity
-
-      # upload line-bot-deployment.zip to the specified S3-bucket
-      - name: Upload to S3
-        run: |
-          echo "Uploading kakeibot-weekly.zip to S3..."
-          aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
-
-      # update Lambda function code
-      - name: Update Lambda Function
-        run: |
-          echo "Updating kakeibot-weekly..."
-          aws lambda update-function-code --function-name kakeibot-weekly --s3-bucket bucket-kakeibot --s3-key kakeibot-weekly.zip
+          if [ "${{ steps.changes.outputs.line_bot_changed }}" == "true" ]; then
+            echo "Updating kakeibot-function..."
+            aws lambda update-function-code --function-name kakeibot-function --s3-bucket bucket-kakeibot --s3-key line-bot-deployment.zip
+          else
+            echo "Skipping kakeibot-function update (no changes)"
+          fi
+          
+          if [ "${{ steps.changes.outputs.weekly_changed }}" == "true" ]; then
+            echo "Updating kakeibot-weekly..."
+            aws lambda update-function-code --function-name kakeibot-weekly --s3-bucket bucket-kakeibot --s3-key kakeibot-weekly.zip
+          else
+            echo "Skipping kakeibot-weekly update (no changes)"
+          fi
+          
+          if [ "${{ steps.changes.outputs.read_table_changed }}" == "true" ]; then
+            echo "Updating read-kakeibot-table..."
+            aws lambda update-function-code --function-name read-kakeibot-table --s3-bucket bucket-kakeibot --s3-key read-kakeibot-table.zip
+          else
+            echo "Skipping read-kakeibot-table update (no changes)"
+          fi
