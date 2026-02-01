@@ -139,7 +139,7 @@ HTML_TEMPLATE = """
             // Count items by category
             const categoryCount = {};
             data.items.forEach(item => {
-                const category = item.catelogy || '未分類';
+                const category = item.category || '未分類';
                 categoryCount[category] = (categoryCount[category] || 0) + 1;
             });
             
