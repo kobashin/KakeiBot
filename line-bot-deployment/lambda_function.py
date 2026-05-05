@@ -102,6 +102,31 @@ def handle_image(event):
 def lambda_handler(event, context):
 
     '''
+        Which function is called, handle_message or handle_image?
+        What information is used to judge?
+
+        The judgment is performed inside line-bot-sdk's WebhookHandler.handle().
+        It checks each webhook event in request body and dispatches to handlers
+        registered by @webhook_handler.add(...), based on event type/message type.
+
+        UML example (Mermaid):
+        sequenceDiagram
+            participant LINE
+            participant Lambda as lambda_handler
+            participant WH as WebhookHandler.handle
+            participant HM as handle_message
+            participant HI as handle_image
+
+            LINE->>Lambda: Webhook event (HTTP request)
+            Lambda->>WH: handle(body, signature)
+            WH->>WH: verify signature + parse events
+
+            alt message.type == "text"
+                WH->>HM: dispatch MessageEvent(TextMessage)
+            else message.type == "image"
+                WH->>HI: dispatch MessageEvent(ImageMessage)
+            end
+
         The structure of event is described here.
         https://developers.line.biz/ja/reference/messaging-api/#message-event
     '''

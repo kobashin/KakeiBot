@@ -82,6 +82,29 @@ sequenceDiagram
 
 ---
 
+## 関数呼び出しの関係
+
+```mermaid
+sequenceDiagram
+    participant LINE
+    participant Lambda as lambda_handler
+    participant WH as WebhookHandler.handle
+    participant HM as handle_message
+    participant HI as handle_image
+
+    LINE->>Lambda: Webhook event (HTTP request)
+    Lambda->>WH: handle(body, signature)
+    WH->>WH: verify signature + parse events
+
+    alt message.type == "text"
+        WH->>HM: dispatch MessageEvent(TextMessage)
+    else message.type == "image"
+        WH->>HI: dispatch MessageEvent(ImageMessage)
+    end
+```
+
+---
+
 ## ライセンス
 
 このプロジェクトはMITライセンスのもとで公開されています。
