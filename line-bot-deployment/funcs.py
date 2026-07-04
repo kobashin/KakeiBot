@@ -332,49 +332,54 @@ def get_category(item, receipt):
     if receipt_type:
         item['receipt_type'] = receipt_type
 
-        # If receipt type is "Meal", set category to "食費"
-        if receipt_type == "Meal":
+        # 食費->自炊
+        if 'ヨークベニマル' in item['merchant_name']:
             item['category'] = "食費"
-
-            """
-            If merchant name has some types of strings, set sub-category
-            For example:
-                "ヨークベニマル" -> "自炊"
-                "かましい" -> "自炊"
-                "かましん" -> "自炊"
-                "OTANI" -> "自炊"
-            """
-            if 'ヨークベニマル' in item['merchant_name']:
-                item['sub-category'] = "自炊"
-                item['memo'] = "ヨークベニマル"
-            elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
-                item['sub-category'] = "自炊"
-                item['memo'] = "かましん"
-            elif 'OTANI' in item['merchant_name']:
-                item['sub-category'] = "自炊"
-                item['memo'] = "オータニ"
-            elif 'たいらや' in item['merchant_name'] or 'だいらや' in item['merchant_name']:
-                item['sub-category'] = "自炊"
-                item['memo'] = "たいらや"
-            else:
-                item['sub-category'] = "外食"
-
-        elif receipt_type in ["Healthcare", "Supplies"]:
+            item['sub-category'] = "自炊"
+            item['memo'] = "ヨークベニマル"
+        elif 'かましい' in item['merchant_name'] or 'かましん' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "自炊"
+            item['memo'] = "かましん"
+        elif 'OTANI' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "自炊"
+            item['memo'] = "オータニ"
+        elif '生鮮食品TOP' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "自炊"
+            item['memo'] = "生鮮食品TOP"
+        elif 'たいらや' in item['merchant_name'] or 'だいらや' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "自炊"
+            item['memo'] = "たいらや"
+        # 食費->外食
+        elif 'LAWSON' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "外食"
+            item['memo'] = "LAWSON"
+        elif 'セブンイレブン' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "外食"
+            item['memo'] = "セブンイレブン"
+        elif 'FamilyMart' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "外食"
+            item['memo'] = "FamilyMart"
+        # 日用品
+        elif 'カワチ' in item['merchant_name']:
             item['category'] = "日用品"
             item['sub-category'] = "-"
-
-            if 'カワチ' in item['merchant_name']:
-                item['memo'] = "カワチ"
-
-            elif 'マツモトキヨシ' in item['merchant_name']:
-                item['memo'] = "マツモトキヨシ"
-
-            else:
-                item['memo'] = "-"
-
+            item['memo'] = "カワチ"
+        elif 'マツモトキヨシ' in item['merchant_name']:
+            item['category'] = "日用品"
+            item['sub-category'] = "-"
+            item['memo'] = "マツモトキヨシ"
+        # Others
         else:
             item['category'] = "-"
             item['sub-category'] = "-"
+            item['memo'] = "-"
 
         return item
 
