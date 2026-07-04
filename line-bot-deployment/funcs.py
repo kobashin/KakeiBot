@@ -430,3 +430,109 @@ def print_item(item):
     for key, value in item.items():
         print(f"{key}: {value}")
     print("\n")
+
+
+def resize_image(image_bytes):
+    """
+    Resize image if it exceeds 4MB to reduce file size.
+    Returns resized image bytes in JPEG format.
+
+    Args:
+        image_bytes: Original image data as bytes
+
+    Returns:
+        Resized image bytes (or original if under 4MB)
+    """
+    from PIL import Image
+    import io
+
+    image_size_mb = len(image_bytes) / (1024 * 1024)
+
+    if image_size_mb < 4:
+        return image_bytes
+
+    print(f"Image size ({image_size_mb:.2f}MB) exceeds 4MB limit. Resizing...")
+
+    with Image.open(io.BytesIO(image_bytes)) as img:
+        # Convert to RGB if necessary
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+
+        # Calculate new dimensions (reduce to ~75% of original)
+        new_width = int(img.width * 0.75)
+        new_height = int(img.height * 0.75)
+
+        # Resize image
+        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Save to bytes with compression
+        img_buffer = io.BytesIO()
+        resized_img.save(img_buffer, format='JPEG', quality=85, optimize=True)
+        resized_bytes = img_buffer.getvalue()
+
+        print(f"Resized to {len(resized_bytes) / (1024*1024):.2f}MB")
+
+        return resized_bytes
+
+
+def generate_s3_key(user_id, timestamp, message_id):
+    """
+    Generate S3 object key for receipt image.
+    Format: receipts/{year}/{month}/{user_id_short}_{timestamp}_{message_id}.jpg
+
+    Args:
+        user_id: LINE user ID
+        timestamp: Unix timestamp in milliseconds
+        message_id: LINE message ID
+
+    Returns:
+        S3 object key string
+    """
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    # Convert timestamp to datetime in Asia/Tokyo timezone
+    dt = datetime.fromtimestamp(timestamp / 1000, tz=ZoneInfo("Asia/Tokyo"))
+    year = dt.strftime('%Y')
+    month = dt.strftime('%m')
+
+    # Shorten user_id (first 5 + last 5 characters)
+    if len(user_id) > 10:
+        user_id_short = user_id[:5] + user_id[-5:]
+    else:
+        user_id_short = user_id
+
+    # Generate S3 key
+    s3_key = f"receipts/{year}/{month}/{user_id_short}_{timestamp}_{message_id}.jpg"
+
+    return s3_key
+
+
+def upload_image_to_s3(image_data, s3_key, bucket_name, s3_client):
+    """
+    Upload image to S3 bucket.
+
+    Args:
+        image_data: Image data as bytes or BytesIO
+        s3_key: S3 object key
+        bucket_name: S3 bucket name
+        s3_client: boto3 S3 client
+
+    Returns:
+        True if upload successful, raises exception otherwise
+    """
+    # Convert BytesIO to bytes if necessary
+    if hasattr(image_data, 'getvalue'):
+        image_bytes = image_data.getvalue()
+    else:
+        image_bytes = image_data
+
+    # Upload to S3
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=s3_key,
+        Body=image_bytes,
+        ContentType='image/jpeg'
+    )
+
+    return True

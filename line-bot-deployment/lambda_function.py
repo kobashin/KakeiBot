@@ -3,21 +3,33 @@ import logging
 import os
 import sys
 import boto3
-from funcs import make_table_item_from_text, make_table_item_from_image, makeResponseMessage
-
-from azure.core.credentials import AzureKeyCredential
-from azure.ai.documentintelligence import DocumentIntelligenceClient
-from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
+from funcs import (
+    make_table_item_from_text,
+    make_table_item_from_image,
+    makeResponseMessage,
+    resize_image,
+    generate_s3_key,
+    upload_image_to_s3
+)
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageMessage
+from linebot.models import (
+    MessageEvent,
+    TextMessage,
+    TextSendMessage,
+    ImageMessage
+)
 from io import BytesIO
 
 
 # DynamoDBに接続し、テーブル 'household_account' を指定
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('KakeiBot-Table')
+
+# S3クライアント初期化
+s3_client = boto3.client('s3')
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME', 'kakeibot-receipt')
 
 # INFOレベル以上のログメッセージを拾うように設定
 logger = logging.getLogger()
@@ -77,8 +89,66 @@ def handle_image(event):
             image_data.write(chunk)
         image_data.seek(0)
 
-        # Azure Custom Visionで画像を解析
-        item = make_table_item_from_image(image_data, event=event)
+        # 画像サイズをチェックし、必要に応じてリサイズ
+        image_bytes = image_data.getvalue()
+        image_size_mb = len(image_bytes) / (1024 * 1024)
+
+        logger.info(f"Original image size: {image_size_mb:.2f}MB")
+
+        # 4MB以上の場合はリサイズ
+        if image_size_mb >= 4:
+            logger.info("Resizing image...")
+            resized_bytes = resize_image(image_bytes)
+            image_data_for_processing = BytesIO(resized_bytes)
+        else:
+            image_data_for_processing = BytesIO(image_bytes)
+
+        # S3に画像を保存（失敗しても処理継続）
+        try:
+            # S3キーを生成
+            s3_key = generate_s3_key(
+                event.source.user_id,
+                event.timestamp,
+                message_id
+            )
+            logger.info(f"Uploading image to S3: {s3_key}")
+
+            # S3にアップロード
+            upload_image_to_s3(
+                image_data_for_processing.getvalue(),
+                s3_key,
+                S3_BUCKET_NAME,
+                s3_client
+            )
+            logger.info(f"S3 upload successful: {s3_key}")
+
+            # S3情報を保存用に記録
+            s3_info = {
+                's3_image_key': s3_key,
+                's3_bucket': S3_BUCKET_NAME,
+                's3_upload_status': 'success'
+            }
+        except Exception as s3_error:
+            logger.error(f"S3 upload failed: {str(s3_error)}")
+            # S3保存失敗時も処理継続
+            s3_info = {
+                's3_upload_status': 'failed',
+                's3_error_message': str(s3_error)[:200]
+            }
+
+        # Azure解析用のデータを準備
+        image_data_for_azure = BytesIO(
+            image_data_for_processing.getvalue()
+        )
+
+        # Azure Document Intelligenceで画像を解析
+        item = make_table_item_from_image(
+            image_data_for_azure,
+            event=event
+        )
+
+        # S3情報をitemに追加
+        item.update(s3_info)
 
         # make a response for LINE bot
         response = makeResponseMessage(item)
