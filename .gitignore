@@ -23,3 +23,6 @@ test_weekly-notify.py
 archive-for-weekly.*
 README_Internal.md
 setenv.*
+
+# Claude files
+CLAUDE.md

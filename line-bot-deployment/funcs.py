@@ -155,6 +155,7 @@ def make_table_item_from_image(image_data, event=None):
             )
 
         # If image_data is the path to image file
+        # In case of being called directly from terminal
         '''
             azure.core.exceptions.HttpResponseError: (InvalidRequest) Invalid request.
             Code: InvalidRequest
