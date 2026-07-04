@@ -370,6 +370,15 @@ def get_category(item, receipt):
             item['category'] = "食費"
             item['sub-category'] = "外食"
             item['memo'] = "タリーズコーヒー"
+        elif 'STARBUCKS' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "外食"
+            item['memo'] = "STARBUCKS"    
+        # 食費->嗜好品
+        elif 'やまや' in item['merchant_name']:
+            item['category'] = "食費"
+            item['sub-category'] = "嗜好品"
+            item['memo'] = "やまや"
         # 日用品
         elif 'カワチ' in item['merchant_name']:
             item['category'] = "日用品"
