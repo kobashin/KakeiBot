@@ -120,8 +120,14 @@ def make_table_item_from_text(text, event):
 def make_table_item_from_image(image_data, event=None):
     """
     This function is used to make a table item put into DynamoDB from image.
+
+    Returns:
+        tuple: (item, analysis_result_dict)
+            - item: dict for DynamoDB
+            - analysis_result_dict: Azure Document Intelligence result as dict (or None on error)
     """
     item = {}
+    analysis_result_dict = None
 
     '''
         userID, timestamp and groupID
@@ -223,6 +229,9 @@ def make_table_item_from_image(image_data, event=None):
         # Wait with timeout
         result = poller.result(timeout=45)  # 45 seconds max
 
+        # Convert result to dict for JSON serialization
+        analysis_result_dict = convert_analysis_result_to_dict(result)
+
         # Process result and return item
         # For almost all cases, there is only one receipt in the response.
         for idx, receipt in enumerate(result.documents):
@@ -258,7 +267,7 @@ def make_table_item_from_image(image_data, event=None):
         item['price'] = 0
         item['memo'] = f'Image analysis failed: {str(e)}'
 
-    return item
+    return item, analysis_result_dict
 
 
 def convert_transaction_datetime_to_string(transaction_date, transaction_time):
@@ -556,6 +565,156 @@ def upload_image_to_s3(image_data, s3_key, bucket_name, s3_client):
         Key=s3_key,
         Body=image_bytes,
         ContentType='image/jpeg'
+    )
+
+    return True
+
+
+def convert_analysis_result_to_dict(result):
+    """
+    Convert Azure Document Intelligence AnalyzeResult to a JSON-serializable dict.
+
+    Args:
+        result: AnalyzeResult object from Azure Document Intelligence
+
+    Returns:
+        dict: JSON-serializable dictionary containing the analysis result
+    """
+    import json
+
+    result_dict = {
+        'api_version': result.api_version if hasattr(result, 'api_version') else None,
+        'model_id': result.model_id if hasattr(result, 'model_id') else None,
+        'content': result.content if hasattr(result, 'content') else None,
+        'documents': []
+    }
+
+    if result.documents:
+        for doc in result.documents:
+            doc_dict = {
+                'doc_type': doc.doc_type if hasattr(doc, 'doc_type') else None,
+                'confidence': doc.confidence if hasattr(doc, 'confidence') else None,
+                'fields': {}
+            }
+
+            if doc.fields:
+                for field_name, field_value in doc.fields.items():
+                    doc_dict['fields'][field_name] = convert_field_to_dict(field_value)
+
+            result_dict['documents'].append(doc_dict)
+
+    return result_dict
+
+
+def convert_field_to_dict(field):
+    """
+    Convert a DocumentField to a JSON-serializable dict.
+
+    Args:
+        field: DocumentField object
+
+    Returns:
+        dict: JSON-serializable dictionary containing the field data
+    """
+    if field is None:
+        return None
+
+    field_dict = {
+        'type': field.type if hasattr(field, 'type') else None,
+        'content': field.content if hasattr(field, 'content') else None,
+        'confidence': field.confidence if hasattr(field, 'confidence') else None,
+    }
+
+    # Handle different value types
+    if hasattr(field, 'value_string') and field.value_string is not None:
+        field_dict['value_string'] = field.value_string
+    if hasattr(field, 'value_number') and field.value_number is not None:
+        field_dict['value_number'] = field.value_number
+    if hasattr(field, 'value_integer') and field.value_integer is not None:
+        field_dict['value_integer'] = field.value_integer
+    if hasattr(field, 'value_date') and field.value_date is not None:
+        field_dict['value_date'] = field.value_date.isoformat()
+    if hasattr(field, 'value_time') and field.value_time is not None:
+        field_dict['value_time'] = field.value_time.isoformat()
+    if hasattr(field, 'value_currency') and field.value_currency is not None:
+        field_dict['value_currency'] = {
+            'currency_symbol': field.value_currency.currency_symbol if hasattr(field.value_currency, 'currency_symbol') else None,
+            'amount': field.value_currency.amount if hasattr(field.value_currency, 'amount') else None,
+            'currency_code': field.value_currency.currency_code if hasattr(field.value_currency, 'currency_code') else None,
+        }
+
+    # Handle array type (e.g., Items in receipt)
+    if hasattr(field, 'value_array') and field.value_array is not None:
+        field_dict['value_array'] = [
+            convert_field_to_dict(item) for item in field.value_array
+        ]
+
+    # Handle object type (nested fields)
+    if hasattr(field, 'value_object') and field.value_object is not None:
+        field_dict['value_object'] = {
+            key: convert_field_to_dict(val) for key, val in field.value_object.items()
+        }
+
+    return field_dict
+
+
+def generate_s3_key_for_json(user_id, timestamp, message_id):
+    """
+    Generate S3 object key for analysis result JSON.
+    Format: analysis-results/{year}/{month}/{user_id_short}_{timestamp}_{message_id}.json
+
+    Args:
+        user_id: LINE user ID
+        timestamp: Unix timestamp in milliseconds
+        message_id: LINE message ID
+
+    Returns:
+        S3 object key string
+    """
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    # Convert timestamp to datetime in Asia/Tokyo timezone
+    dt = datetime.fromtimestamp(timestamp / 1000, tz=ZoneInfo("Asia/Tokyo"))
+    year = dt.strftime('%Y')
+    month = dt.strftime('%m')
+
+    # Shorten user_id (first 5 + last 5 characters)
+    if len(user_id) > 10:
+        user_id_short = user_id[:5] + user_id[-5:]
+    else:
+        user_id_short = user_id
+
+    # Generate S3 key
+    s3_key = f"analysis-results/{year}/{month}/{user_id_short}_{timestamp}_{message_id}.json"
+
+    return s3_key
+
+
+def upload_json_to_s3(json_data, s3_key, bucket_name, s3_client):
+    """
+    Upload JSON data to S3 bucket.
+
+    Args:
+        json_data: dict to be serialized as JSON
+        s3_key: S3 object key
+        bucket_name: S3 bucket name
+        s3_client: boto3 S3 client
+
+    Returns:
+        True if upload successful, raises exception otherwise
+    """
+    import json
+
+    # Serialize dict to JSON string
+    json_string = json.dumps(json_data, ensure_ascii=False, indent=2)
+
+    # Upload to S3
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=s3_key,
+        Body=json_string.encode('utf-8'),
+        ContentType='application/json'
     )
 
     return True
