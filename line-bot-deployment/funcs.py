@@ -577,12 +577,20 @@ def convert_analysis_result_to_dict(result):
     """
     Convert Azure Document Intelligence AnalyzeResult to a JSON-serializable dict.
 
+    Uses SDK-provided serialization methods when available to ensure all fields
+    are preserved. Falls back to manual extraction if SDK methods are not available.
+
     Args:
         result: AnalyzeResult object from Azure Document Intelligence
 
     Returns:
         dict: JSON-serializable dictionary containing the analysis result
     """
+    if hasattr(result, 'as_dict'):
+        return result.as_dict()
+
+    if hasattr(result, 'model_dump'):
+        return result.model_dump(mode='json')
 
     result_dict = {
         'api_version': result.api_version if hasattr(result, 'api_version') else None,
