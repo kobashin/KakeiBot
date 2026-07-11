@@ -583,7 +583,6 @@ def convert_analysis_result_to_dict(result):
     Returns:
         dict: JSON-serializable dictionary containing the analysis result
     """
-    import json
 
     result_dict = {
         'api_version': result.api_version if hasattr(result, 'api_version') else None,
