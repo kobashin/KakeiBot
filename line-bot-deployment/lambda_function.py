@@ -60,25 +60,33 @@ webhook_handler = WebhookHandler(CHANNEL_SECRET)
 @webhook_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
 
+    logger.info(f"[handle_message] Text message received from userID: {event.source.user_id[:10]}...")
+
     # get message text
     tmp_text = event.message.text
+
     # make a table item put into DynamoDB
     item = make_table_item_from_text(tmp_text, event)
+
     # make a response for LINE bot
     response = makeResponseMessage(item)
 
     # put item into DynamoDB
     table.put_item(Item=item)
+    logger.info(f"[handle_message] Item saved to DynamoDB")
 
     # 応答トークンを使って回答を応答メッセージで送る
     line_bot_api.reply_message(
         event.reply_token, TextSendMessage(text=response))
+    logger.info(f"[handle_message] Reply message sent")
 
 
 # 画像メッセージを処理する
 @webhook_handler.add(MessageEvent, message=ImageMessage)
 def handle_image(event):
     try:
+        logger.info(f"[handle_image] Image message received from userID: {event.source.user_id[:10]}...")
+
         # 画像メッセージのIDを取得
         message_id = event.message.id
 
@@ -144,6 +152,7 @@ def handle_image(event):
         )
 
         # Azure Document Intelligenceで画像を解析
+        logger.info(f"[handle_image] Analyzing image with Azure Document Intelligence")
         item, analysis_result = make_table_item_from_image(
             image_data_for_azure,
             event=event
@@ -182,18 +191,21 @@ def handle_image(event):
 
         # DynamoDBに登録
         table.put_item(Item=item)
+        logger.info(f"[handle_image] Item saved to DynamoDB")
 
         # 解析結果をユーザーに返信
         line_bot_api.reply_message(
             event.reply_token, TextSendMessage(text=response)
         )
+        logger.info(f"[handle_image] Reply message sent")
 
     except Exception as e:
-        logger.error(f"Error processing image: {str(e)}")
+        logger.error(f"[handle_image] Error processing image: {str(e)}")
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="画像の解析中にエラーが発生しました。")
         )
+        logger.error(f"[handle_image] Error message sent to user")
 
 
 def lambda_handler(event, context):
@@ -234,8 +246,7 @@ def lambda_handler(event, context):
 
     body = event['body']
     # 受け取ったWebhookのJSON
-    logger.info(body)
-
+   
     try:
         # WebhookHandler jedges type of the event from LINE
         # and call corresponding handler(handle_message/handle_image).

@@ -2,10 +2,13 @@ import re
 import datetime
 from zoneinfo import ZoneInfo
 import os
+import logging
 # Add these imports for Azure Document Intelligence
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
+
+logger = logging.getLogger()
 
 
 def make_table_item_from_text(text, event):
@@ -32,6 +35,8 @@ def make_table_item_from_text(text, event):
 
         priceの後に書かれている文字列はメモとして扱う
     """
+    logger.info("[make_table_item_from_text] Starting text parsing")
+
     # tmp return value
     item = {}
     # split message
@@ -79,7 +84,7 @@ def make_table_item_from_text(text, event):
         item['date'] = datetime.datetime.now(
             ZoneInfo("Asia/Tokyo")
         ).strftime('%Y-%m%d-%H%M')
-
+   
     '''
         price, category, sub-category, memo
     '''
@@ -113,7 +118,9 @@ def make_table_item_from_text(text, event):
         item['sub-category'] = '-'
         item['price'] = '0'
         item['memo'] = text
+        logger.warning("[make_table_item_from_text] No price found, using default values")
 
+    logger.info(f"[make_table_item_from_text] Parsing complete: {item}")
     return item
 
 
@@ -126,6 +133,8 @@ def make_table_item_from_image(image_data, event=None):
             - item: dict for DynamoDB
             - analysis_result_dict: Azure Document Intelligence result as dict (or None on error)
     """
+    logger.info("[make_table_item_from_image] Starting image analysis")
+
     item = {}
     analysis_result_dict = None
 
@@ -227,17 +236,20 @@ def make_table_item_from_image(image_data, event=None):
                 raise ValueError("Invalid image file path")
 
         # Wait with timeout
+        logger.info("[make_table_item_from_image] Waiting for Azure analysis result")
         result = poller.result(timeout=45)  # 45 seconds max
+        logger.info("[make_table_item_from_image] Azure analysis complete")
 
         # Convert result to dict for JSON serialization (conversion failure shouldn't break main parsing)
         try:
             analysis_result_dict = convert_analysis_result_to_dict(result)
+            logger.info("[make_table_item_from_image] Converted analysis result to dict")
         except Exception as e:
-            print(f"convert_analysis_result_to_dict failed: {e}")
+            logger.error(f"[make_table_item_from_image] convert_analysis_result_to_dict failed: {e}")
             analysis_result_dict = None
         # Process result and return item
         # For almost all cases, there is only one receipt in the response.
-        for idx, receipt in enumerate(result.documents):
+        for receipt in result.documents:
             # merchant name
             merchant_name = receipt.fields.get("MerchantName")
             if merchant_name:
@@ -252,7 +264,7 @@ def make_table_item_from_image(image_data, event=None):
                 category, sub-category and memo
             '''
             item = get_category(item, receipt)
-
+ 
             '''
                 price
             '''
@@ -262,6 +274,7 @@ def make_table_item_from_image(image_data, event=None):
             # item['evidence'] = receipt  # This causes "Float types not supported" error
 
     except Exception as e:
+        logger.error(f"[make_table_item_from_image] Analysis failed: {str(e)}")
         item['date'] = datetime.datetime.now(
                 ZoneInfo("Asia/Tokyo")
             ).strftime('%Y-%m%d-%H%M')
@@ -270,6 +283,7 @@ def make_table_item_from_image(image_data, event=None):
         item['price'] = 0
         item['memo'] = f'Image analysis failed: {str(e)}'
 
+    logger.info(f"[make_table_item_from_image] Image processing complete")
     return item, analysis_result_dict
 
 
@@ -337,6 +351,7 @@ def makeResponseMessage(item):
 
 
 def get_category(item, receipt):
+
     # Receipt Type
     tmp_receipt_type = receipt.fields.get("ReceiptType")
     receipt_type = tmp_receipt_type.value_string
@@ -409,6 +424,7 @@ def get_category(item, receipt):
             item['category'] = "-"
             item['sub-category'] = "-"
             item['memo'] = "-"
+            logger.warning(f"[get_category] No matching category for merchant: {item.get('merchant_name')}")
 
         return item
 
