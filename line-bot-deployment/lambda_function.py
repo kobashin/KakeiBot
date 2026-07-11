@@ -171,9 +171,11 @@ def handle_image(event):
                 logger.info(f"Analysis JSON upload successful: {json_s3_key}")
 
                 item['s3_analysis_json_key'] = json_s3_key
+                item['s3_analysis_json_status'] = 'success'
             except Exception as json_error:
                 logger.error(f"Analysis JSON upload failed: {str(json_error)}")
                 item['s3_analysis_json_status'] = 'failed'
+                item['s3_analysis_json_error_message'] = str(json_error)[:200]
 
         # make a response for LINE bot
         response = makeResponseMessage(item)
