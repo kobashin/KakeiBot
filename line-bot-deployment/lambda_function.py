@@ -9,7 +9,9 @@ from funcs import (
     makeResponseMessage,
     resize_image,
     generate_s3_key,
-    upload_image_to_s3
+    upload_image_to_s3,
+    generate_s3_key_for_json,
+    upload_json_to_s3
 )
 
 from linebot import LineBotApi, WebhookHandler
@@ -142,13 +144,38 @@ def handle_image(event):
         )
 
         # Azure Document Intelligenceで画像を解析
-        item = make_table_item_from_image(
+        item, analysis_result = make_table_item_from_image(
             image_data_for_azure,
             event=event
         )
 
         # S3情報をitemに追加
         item.update(s3_info)
+
+        # 解析結果JSONをS3に保存（失敗しても処理継続）
+        if analysis_result is not None:
+            try:
+                json_s3_key = generate_s3_key_for_json(
+                    event.source.user_id,
+                    event.timestamp,
+                    message_id
+                )
+                logger.info(f"Uploading analysis JSON to S3: {json_s3_key}")
+
+                upload_json_to_s3(
+                    analysis_result,
+                    json_s3_key,
+                    S3_BUCKET_NAME,
+                    s3_client
+                )
+                logger.info(f"Analysis JSON upload successful: {json_s3_key}")
+
+                item['s3_analysis_json_key'] = json_s3_key
+                item['s3_analysis_json_status'] = 'success'
+            except Exception as json_error:
+                logger.error(f"Analysis JSON upload failed: {str(json_error)}")
+                item['s3_analysis_json_status'] = 'failed'
+                item['s3_analysis_json_error_message'] = str(json_error)[:200]
 
         # make a response for LINE bot
         response = makeResponseMessage(item)
