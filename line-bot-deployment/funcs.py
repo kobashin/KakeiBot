@@ -229,9 +229,11 @@ def make_table_item_from_image(image_data, event=None):
         # Wait with timeout
         result = poller.result(timeout=45)  # 45 seconds max
 
-        # Convert result to dict for JSON serialization
-        analysis_result_dict = convert_analysis_result_to_dict(result)
-
+        # Convert result to dict for JSON serialization (conversion failure shouldn't break main parsing)
+        try:
+            analysis_result_dict = convert_analysis_result_to_dict(result)
+        except Exception:
+            analysis_result_dict = None
         # Process result and return item
         # For almost all cases, there is only one receipt in the response.
         for idx, receipt in enumerate(result.documents):
