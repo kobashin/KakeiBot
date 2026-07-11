@@ -232,7 +232,8 @@ def make_table_item_from_image(image_data, event=None):
         # Convert result to dict for JSON serialization (conversion failure shouldn't break main parsing)
         try:
             analysis_result_dict = convert_analysis_result_to_dict(result)
-        except Exception:
+        except Exception as e:
+            print(f"convert_analysis_result_to_dict failed: {e}")
             analysis_result_dict = None
         # Process result and return item
         # For almost all cases, there is only one receipt in the response.
