@@ -338,11 +338,8 @@ def makeResponseMessage(item):
     This function is used to make a response for LINE bot from table item
     """
 
-    # if userID exists in item, shorten it
-    if 'userID' in item:
-        item['userID'] = item['userID'][:10] + '...'
-
-    tmp_response = [f"{key}:{value}" for key, value in item.items()]
+    keys = ['date', 'category', 'sub-category', 'price', 'memo']
+    tmp_response = [f"{key}:{item[key]}" for key in keys if key in item]
     tmp_response = '\n'.join(tmp_response)
     response = "KakeiBot is updated!\n" \
         + tmp_response
