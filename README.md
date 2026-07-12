@@ -32,7 +32,7 @@ sequenceDiagram
     Note over User,DynamoDB: テキストメッセージフロー
     User->>LINE: テキストメッセージ送信
     LINE->>Lambda: Webhook (event)
-    Lambda->>Lambda: makeDynamoDBTableItem_from_text()
+    Lambda->>Lambda: make_table_item_from_text()
     Lambda->>DynamoDB: データ保存
     Lambda->>Lambda: makeResponseMessage()
     Lambda->>LINE: 応答メッセージ
@@ -45,7 +45,7 @@ sequenceDiagram
     LINE->>Lambda: 画像データ
     Lambda->>Azure: 画像解析リクエスト
     Azure->>Lambda: 解析結果（テキスト、日付、金額等）
-    Lambda->>Lambda: makeDynamoDBTableItem_from_image()
+    Lambda->>Lambda: make_table_item_from_image()
     Lambda->>DynamoDB: データ保存
     Lambda->>Lambda: makeResponseMessage()
     Lambda->>LINE: 応答メッセージ
@@ -72,7 +72,7 @@ sequenceDiagram
 ### 3. 週次レポート
 - 別のLambda関数が週に一度自動実行（EventBridgeでスケジュール）
 - DynamoDBから一週間分のデータを集計
-- LINEグループにサマリーと以下のダッシュボードへのリンクを送信
+- LINEグループに拠出金額サマリーを送信
 
 ### 4. データ分析ダッシュボード
 - API Gateway + Lambda (read-kakeibot-table) でWebダッシュボードを提供
