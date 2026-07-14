@@ -4,6 +4,8 @@ python/
 kakeibot-weekly/
 read-kakeibot-table/
 .vscode/
+ui/sample/
+ui/node_modules/
 
 # Python cache and compiled files
 __pycache__/
