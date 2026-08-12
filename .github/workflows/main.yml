@@ -69,6 +69,12 @@ jobs:
             echo "read_table_changed=false" >> $GITHUB_OUTPUT
           fi
 
+          if echo "$CHANGED_FILES" | grep -qE "^ui/src/|^ui/vite\.config\.|^ui/package\.json|^ui/pnpm-lock\.yaml"; then
+            echo "ui_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "ui_changed=false" >> $GITHUB_OUTPUT
+          fi
+
       # 差分があるファイルのみS3にアップロード
       - name: Upload to S3
         run: |
@@ -123,3 +129,39 @@ jobs:
           else
             echo "Skipping read-kakeibot-table update (no changes)"
           fi
+
+      - name: Setup Node.js for UI build
+        if: steps.changes.outputs.ui_changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        if: steps.changes.outputs.ui_changed == 'true'
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11
+
+      - name: Install UI dependencies
+        if: steps.changes.outputs.ui_changed == 'true'
+        working-directory: ./ui
+        run: pnpm install
+
+      - name: Build UI
+        if: steps.changes.outputs.ui_changed == 'true'
+        working-directory: ./ui
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: pnpm build
+
+      - name: Deploy UI to S3
+        if: steps.changes.outputs.ui_changed == 'true'
+        run: |
+          echo "Deploying UI to s3://bucket-kakeibot/ui/ ..."
+          aws s3 sync ui/dist/ s3://bucket-kakeibot/ui/ \
+            --delete \
+            --cache-control "max-age=86400,public" \
+            --exclude "index.html"
+          aws s3 cp ui/dist/index.html s3://bucket-kakeibot/ui/index.html \
+            --cache-control "no-cache,no-store,must-revalidate"
+          echo "UI deployed to http://bucket-kakeibot.s3-website.ap-northeast-1.amazonaws.com/ui/"

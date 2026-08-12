@@ -6,6 +6,8 @@ read-kakeibot-table/
 .vscode/
 ui/sample/
 ui/node_modules/
+ui/dist/
+ui/.env*
 
 # Python cache and compiled files
 __pycache__/
@@ -28,3 +30,4 @@ setenv.*
 
 # Claude files
 CLAUDE.md
+.playwright-mcp/
