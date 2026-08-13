@@ -45,30 +45,36 @@ jobs:
           echo "Changed files: $CHANGED_FILES"
           
           # 各zipに関連するファイルの変更を検出
+
+          # line-bot-deployment.zip
           if echo "$CHANGED_FILES" | grep -qE "^line-bot-deployment/|^line-bot-deployment\.zip$"; then
             echo "line_bot_changed=true" >> $GITHUB_OUTPUT
           else
             echo "line_bot_changed=false" >> $GITHUB_OUTPUT
           fi
           
+          # layer.zip
           if echo "$CHANGED_FILES" | grep -qE "^layer\.zip$|^python/|^requirements\.txt$"; then
             echo "layer_changed=true" >> $GITHUB_OUTPUT
           else
             echo "layer_changed=false" >> $GITHUB_OUTPUT
           fi
           
+          # kakeibot-weekly.zip
           if echo "$CHANGED_FILES" | grep -qE "^kakeibot-weekly/|^kakeibot-weekly\.zip$"; then
             echo "weekly_changed=true" >> $GITHUB_OUTPUT
           else
             echo "weekly_changed=false" >> $GITHUB_OUTPUT
           fi
           
+          # read-kakeibot-table.zip
           if echo "$CHANGED_FILES" | grep -qE "^read-kakeibot-table/|^read-kakeibot-table\.zip$"; then
             echo "read_table_changed=true" >> $GITHUB_OUTPUT
           else
             echo "read_table_changed=false" >> $GITHUB_OUTPUT
           fi
 
+          # ui/ (S3静的ホスティング)
           if echo "$CHANGED_FILES" | grep -qE "^ui/src/|^ui/vite\.config\.|^ui/package\.json|^ui/pnpm-lock\.yaml"; then
             echo "ui_changed=true" >> $GITHUB_OUTPUT
           else
@@ -78,6 +84,9 @@ jobs:
       # 差分があるファイルのみS3にアップロード
       - name: Upload to S3
         run: |
+          # 各zipをS3にアップロード
+
+          # line-bot-deployment.zip
           if [ "${{ steps.changes.outputs.line_bot_changed }}" == "true" ]; then
             echo "Uploading line-bot-deployment.zip to S3..."
             aws s3 cp line-bot-deployment.zip s3://bucket-kakeibot/line-bot-deployment.zip
@@ -85,6 +94,7 @@ jobs:
             echo "Skipping line-bot-deployment.zip (no changes)"
           fi
           
+          # layer.zip
           if [ "${{ steps.changes.outputs.layer_changed }}" == "true" ]; then
             echo "Uploading layer.zip to S3..."
             aws s3 cp layer.zip s3://bucket-kakeibot/layer.zip
@@ -92,6 +102,7 @@ jobs:
             echo "Skipping layer.zip (no changes)"
           fi
           
+          # kakeibot-weekly.zip
           if [ "${{ steps.changes.outputs.weekly_changed }}" == "true" ]; then
             echo "Uploading kakeibot-weekly.zip to S3..."
             aws s3 cp kakeibot-weekly.zip s3://bucket-kakeibot/kakeibot-weekly.zip
@@ -99,6 +110,7 @@ jobs:
             echo "Skipping kakeibot-weekly.zip (no changes)"
           fi
           
+          # read-kakeibot-table.zip
           if [ "${{ steps.changes.outputs.read_table_changed }}" == "true" ]; then
             echo "Uploading read-kakeibot-table.zip to S3..."
             aws s3 cp read-kakeibot-table.zip s3://bucket-kakeibot/read-kakeibot-table.zip
@@ -109,20 +121,23 @@ jobs:
       # 差分があるファイルのみLambda関数を更新
       - name: Update Lambda Functions
         run: |
+          # line-bot-deployment.zip
           if [ "${{ steps.changes.outputs.line_bot_changed }}" == "true" ]; then
             echo "Updating kakeibot-function..."
             aws lambda update-function-code --function-name kakeibot-function --s3-bucket bucket-kakeibot --s3-key line-bot-deployment.zip
           else
             echo "Skipping kakeibot-function update (no changes)"
           fi
-          
+
+          # kakeibot-weekly.zip
           if [ "${{ steps.changes.outputs.weekly_changed }}" == "true" ]; then
             echo "Updating kakeibot-weekly..."
             aws lambda update-function-code --function-name kakeibot-weekly --s3-bucket bucket-kakeibot --s3-key kakeibot-weekly.zip
           else
             echo "Skipping kakeibot-weekly update (no changes)"
           fi
-          
+
+          # read-kakeibot-table.zip
           if [ "${{ steps.changes.outputs.read_table_changed }}" == "true" ]; then
             echo "Updating read-kakeibot-table..."
             aws lambda update-function-code --function-name read-kakeibot-table --s3-bucket bucket-kakeibot --s3-key read-kakeibot-table.zip
@@ -130,23 +145,27 @@ jobs:
             echo "Skipping read-kakeibot-table update (no changes)"
           fi
 
+      # ui/ が変更された場合のみ実行: Node.js 20 をセットアップ
       - name: Setup Node.js for UI build
         if: steps.changes.outputs.ui_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      # pnpm パッケージマネージャをセットアップ
       - name: Setup pnpm
         if: steps.changes.outputs.ui_changed == 'true'
         uses: pnpm/action-setup@v3
         with:
           version: 11
 
+      # ui/ の依存パッケージをインストール
       - name: Install UI dependencies
         if: steps.changes.outputs.ui_changed == 'true'
         working-directory: ./ui
         run: pnpm install
 
+      # VITE_API_URL を注入して React アプリをビルド → ui/dist/ を生成
       - name: Build UI
         if: steps.changes.outputs.ui_changed == 'true'
         working-directory: ./ui
@@ -154,6 +173,7 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: pnpm build
 
+      # ui/dist/ を s3://bucket-kakeibot/ui/ に同期（index.html のみキャッシュ無効化）
       - name: Deploy UI to S3
         if: steps.changes.outputs.ui_changed == 'true'
         run: |
