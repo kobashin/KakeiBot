@@ -1,0 +1,55 @@
+#!/bin/bash
+# zip更新チェック: ソースディレクトリに変更がある場合、対応するzipもステージ済みであることを確認する
+
+STAGED=$(git diff --cached --name-only)
+
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
+warn=0
+
+check_zip() {
+    local dir="$1"
+    local zip="$2"
+    local bat="$3"
+
+    if echo "$STAGED" | grep -qE "^${dir}/"; then
+        if ! echo "$STAGED" | grep -qF "$zip"; then
+            echo "警告: ${dir}/ に変更がありますが ${zip} がステージされていません。"
+            echo "      → ${bat} を実行してから git add ${zip} してください。"
+            warn=1
+        fi
+    fi
+}
+
+check_zip "line-bot-deployment" "line-bot-deployment.zip" "zip_kakeibot.bat"
+check_zip "kakeibot-weekly"     "kakeibot-weekly.zip"     "zip_kakeibot_weekly.bat"
+check_zip "read-kakeibot-table" "read-kakeibot-table.zip" "zip_kakeibot_read_table.bat"
+
+# python/ または requirements.txt の変更 → layer.zip
+if echo "$STAGED" | grep -qE "^python/|^requirements\.txt"; then
+    if ! echo "$STAGED" | grep -qF "layer.zip"; then
+        echo "警告: python/ または requirements.txt に変更がありますが layer.zip がステージされていません。"
+        echo "      → zip_kakeibot_layer.bat を実行してから git add layer.zip してください。"
+        warn=1
+    fi
+fi
+
+# weekly-notify.py の変更は kakeibot-weekly.zip にも影響する
+if echo "$STAGED" | grep -qF "line-bot-deployment/weekly-notify.py"; then
+    if ! echo "$STAGED" | grep -qF "kakeibot-weekly.zip"; then
+        echo "警告: line-bot-deployment/weekly-notify.py に変更がありますが kakeibot-weekly.zip がステージされていません。"
+        echo "      → zip_kakeibot_weekly.bat を実行してから git add kakeibot-weekly.zip してください。"
+        warn=1
+    fi
+fi
+
+if [ $warn -eq 1 ]; then
+    echo ""
+    echo "コミットがブロックされました。上記のzipを生成・ステージしてからリトライしてください。"
+    echo "スキップする場合は: git commit --no-verify"
+    exit 1
+fi
+
+exit 0
