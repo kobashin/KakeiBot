@@ -18,24 +18,15 @@ interface Transaction {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const EXPENSE_CATEGORIES = [
-  { label: "食費", icon: "🍽️" },
-  { label: "交際費", icon: "👥" },
-  { label: "交通費", icon: "🚃" },
+  { label: "食費",   icon: "🍽️" },
   { label: "日用品", icon: "🛒" },
-  { label: "医療費", icon: "💊" },
-  { label: "美容費", icon: "💄" },
-  { label: "娯楽費", icon: "🎮" },
-  { label: "光熱費", icon: "💡" },
-  { label: "通信費", icon: "📱" },
-  { label: "家賃", icon: "🏠" },
+  { label: "交通費", icon: "🚃" },
   { label: "その他", icon: "📌" },
 ];
 
 const INCOME_CATEGORIES = [
-  { label: "給与", icon: "💼" },
-  { label: "副収入", icon: "💰" },
-  { label: "ボーナス", icon: "🎁" },
-  { label: "その他", icon: "📌" },
+  { label: (import.meta.env.VITE_INCOME_P1 as string) || "Person1", icon: "👨" },
+  { label: (import.meta.env.VITE_INCOME_P2 as string) || "Person2", icon: "👩" },
 ];
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -48,14 +39,14 @@ const todayStr = () => {
 // ─── Seed data ───────────────────────────────────────────────────────────────
 
 const SEED: Transaction[] = [
-  { id: "1", type: "expense", amount: 880, category: "食費", memo: "ランチ", date: "2026-07-06" },
-  { id: "2", type: "expense", amount: 2000, category: "光熱費", memo: "公共料金", date: "2026-07-06" },
-  { id: "3", type: "expense", amount: 8000, category: "交際費", memo: "友人の誕生日", date: "2026-07-05" },
-  { id: "4", type: "expense", amount: 2500, category: "美容費", memo: "美容室", date: "2026-07-05" },
-  { id: "5", type: "expense", amount: 1000, category: "食費", memo: "コンビニ", date: "2026-07-04" },
-  { id: "6", type: "income", amount: 350000, category: "給与", memo: "7月分給与", date: "2026-07-01" },
-  { id: "7", type: "expense", amount: 10500, category: "娯楽費", memo: "コンサート", date: "2026-07-10" },
-  { id: "8", type: "expense", amount: 3500, category: "交通費", memo: "定期券", date: "2026-07-03" },
+  { id: "1", type: "expense", amount: 880,    category: "食費",   memo: "ランチ",     date: "2026-07-06" },
+  { id: "2", type: "expense", amount: 2000,   category: "その他", memo: "公共料金",   date: "2026-07-06" },
+  { id: "3", type: "expense", amount: 8000,   category: "その他", memo: "友人の誕生日", date: "2026-07-05" },
+  { id: "4", type: "expense", amount: 2500,   category: "その他", memo: "美容室",     date: "2026-07-05" },
+  { id: "5", type: "expense", amount: 1000,   category: "食費",   memo: "コンビニ",   date: "2026-07-04" },
+  { id: "6", type: "income",  amount: 350000, category: (import.meta.env.VITE_INCOME_P1 as string) || "Person1", memo: "7月分", date: "2026-07-01" },
+  { id: "7", type: "expense", amount: 10500,  category: "その他", memo: "コンサート", date: "2026-07-10" },
+  { id: "8", type: "expense", amount: 3500,   category: "交通費", memo: "定期券",     date: "2026-07-03" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -172,7 +163,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
             key={t}
             onClick={() => {
               setType(t);
-              setCategory(t === "expense" ? "食費" : "給与");
+              setCategory(t === "expense" ? "食費" : INCOME_CATEGORIES[0].label);
             }}
             className={`flex-1 py-2.5 text-sm font-semibold transition-colors
               ${type === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
@@ -491,9 +482,14 @@ function DashboardScreen() {
           categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
         });
         setStats({ total: data.items.length, categories: Object.keys(categoryCount).length });
-        setChartData(
-          Object.entries(categoryCount).map(([category, count]) => ({ category, count }))
-        );
+        const CHART_DISPLAY = ["食費", "日用品", "交通費"] as const;
+        setChartData([
+          ...CHART_DISPLAY.map((cat) => ({ category: cat, count: categoryCount[cat] ?? 0 })),
+          {
+            category: "拠出",
+            count: (categoryCount["拠出"] ?? 0) + (categoryCount["入金"] ?? 0),
+          },
+        ]);
         setWeekly(summary as WeeklySummary);
       })
       .catch(() => setError("データの取得に失敗しました"))

@@ -171,6 +171,8 @@ jobs:
         working-directory: ./ui
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_INCOME_P1: ${{ secrets.VITE_INCOME_P1 }}
+          VITE_INCOME_P2: ${{ secrets.VITE_INCOME_P2 }}
         run: pnpm build
 
       # ui/dist/ を s3://bucket-kakeibot/ui/ に同期（index.html のみキャッシュ無効化）
