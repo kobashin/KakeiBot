@@ -168,7 +168,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
             className={`flex-1 py-2.5 text-sm font-semibold transition-colors
               ${type === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
           >
-            {t === "expense" ? "支出" : "収入"}
+            {t === "expense" ? "支出" : "拠出"}
           </button>
         ))}
       </div>
