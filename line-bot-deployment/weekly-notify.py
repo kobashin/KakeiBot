@@ -18,19 +18,23 @@ time.sleep(3)
 # table_item_count = description['Table']['ItemCount']
 
 # This function will be invoked by AWS EventBridge/Lambda.
-# Schedule expression is "cron(0 23 ? * SUN *)".
+# Schedule expression is "cron(0 23 ? * SUN *)" which is 23:00 UTC on Sunday.
+# This equals Monday 08:00 JST (UTC+9).
 # Start time is 00:00 JST on last Monday.
 # End time is 23:59 JST on last Sunday.
 # The time zone is Asia/Tokyo (JST).
-# For example, if this function is invoked 23:00 on 2025-05-04 (Sunday),
+# For example, if this function is invoked at 23:00 UTC on 2025-05-04 (Sunday),
+# which is 08:00 JST on 2025-05-05 (Monday),
 # the start_time is 00:00 on 2025-04-28 (Monday) and the end_time is 23:59 on 2025-05-04 (Sunday).
 
 now = datetime.now(ZoneInfo('Asia/Tokyo'))
-# To get start_time, we need to subtract 6 days from the current date and set the time to 00:00.
-start_time = now - timedelta(days=6)
+# Since cron runs on Monday morning JST, we report on the previous Mon-Sun week.
+# To get start_time (last Monday), we need to subtract 7 days from the current date and set the time to 00:00.
+start_time = now - timedelta(days=7)
 start_time = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
-# To get end_time, we need to set the time to 23:59.
-end_time = now.replace(hour=23, minute=59, second=0, microsecond=0)
+# To get end_time (last Sunday), we need to subtract 1 day and set the time to 23:59.
+end_time = now - timedelta(days=1)
+end_time = end_time.replace(hour=23, minute=59, second=0, microsecond=0)
 
 # To get the date in the format YYYY-MMDD-HHMM, we need to format the date.
 start_time_str = start_time.strftime('%Y-%m%d-%H%M')
