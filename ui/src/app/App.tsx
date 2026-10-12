@@ -169,7 +169,7 @@ function SubCategoryPicker({
 
 // ─── Register Screen ──────────────────────────────────────────────────────────
 
-function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
+function RegisterScreen({ onSave, saving }: { onSave: (t: Transaction) => void; saving: boolean }) {
   const [type, setType] = useState<TransactionType>("expense");
   const [amountStr, setAmountStr] = useState("0");
   const [category, setCategory] = useState("食費");
@@ -307,9 +307,14 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
       {/* Save */}
       <button
         onClick={handleSave}
-        className="mx-4 mt-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm hover:bg-primary/90 active:scale-[0.98] transition-all"
+        disabled={saving}
+        className={`mx-4 mt-2 py-2.5 rounded-xl font-semibold text-base shadow-sm transition-all
+          ${saving
+            ? "bg-muted text-muted-foreground cursor-not-allowed"
+            : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]"
+          }`}
       >
-        保存
+        {saving ? "保存中..." : "保存"}
       </button>
 
       {/* Numpad */}
@@ -690,11 +695,50 @@ export default function App() {
   const [screen, setScreen] = useState<"register" | "calendar" | "dashboard">("register");
   const [transactions, setTransactions] = useState<Transaction[]>(SEED);
   const [savedMsg, setSavedMsg] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
-  const handleSave = (t: Transaction) => {
+  const handleSave = async (t: Transaction) => {
     setTransactions((prev) => [t, ...prev]);
-    setSavedMsg(true);
-    setTimeout(() => setSavedMsg(false), 1800);
+
+    if (!apiUrl) {
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 1800);
+      return;
+    }
+
+    setSaving(true);
+    setErrorMsg("");
+    try {
+      const isIncome = t.type === "income";
+      const payload = {
+        category: isIncome ? "拠出" : t.category,
+        subCategory: isIncome ? t.category : (t.subCategory || "-"),
+        price: t.amount,
+        memo: t.memo || "-",
+        date: t.date,
+      };
+
+      const res = await fetch(`${apiUrl}/api/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 1800);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "保存に失敗しました");
+      setTimeout(() => setErrorMsg(""), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -717,10 +761,17 @@ export default function App() {
         </div>
       )}
 
+      {/* Error toast */}
+      {errorMsg && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg">
+          {errorMsg}
+        </div>
+      )}
+
       {/* Screen content */}
       <div className="flex-1 overflow-hidden relative">
         <div className={`absolute inset-0 overflow-hidden transition-opacity duration-200 ${screen === "register" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
-          <RegisterScreen onSave={handleSave} />
+          <RegisterScreen onSave={handleSave} saving={saving} />
         </div>
         <div className={`absolute inset-0 overflow-hidden transition-opacity duration-200 ${screen === "calendar" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
           <CalendarScreen transactions={transactions} />

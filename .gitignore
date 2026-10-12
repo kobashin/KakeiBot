@@ -3,11 +3,14 @@ analysis/
 python/
 kakeibot-weekly/
 read-kakeibot-table/
+register-from-ui/
 .vscode/
 ui/sample/
 ui/node_modules/
 ui/dist/
 ui/.env*
+plan/
+kakeibot-template.yaml
 
 # Python cache and compiled files
 __pycache__/
@@ -23,6 +26,7 @@ zip_kakeibot_layer.bat
 zip_kakeibot_read_table.bat
 zip_kakeibot_weekly.bat
 zip_kakeibot.bat
+zip_kakeibot_register_ui.bat
 test_weekly-notify.py
 archive-for-weekly.*
 README_Internal.md

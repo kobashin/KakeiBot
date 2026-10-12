@@ -74,6 +74,13 @@ jobs:
             echo "read_table_changed=false" >> $GITHUB_OUTPUT
           fi
 
+          # register-from-ui.zip
+          if echo "$CHANGED_FILES" | grep -qE "^line-bot-deployment/register-from-ui\.py$|^register-from-ui/|^register-from-ui\.zip$"; then
+            echo "register_ui_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "register_ui_changed=false" >> $GITHUB_OUTPUT
+          fi
+
           # ui/ (S3静的ホスティング)
           if echo "$CHANGED_FILES" | grep -qE "^ui/src/|^ui/vite\.config\.|^ui/package\.json|^ui/pnpm-lock\.yaml"; then
             echo "ui_changed=true" >> $GITHUB_OUTPUT
@@ -118,6 +125,14 @@ jobs:
             echo "Skipping read-kakeibot-table.zip (no changes)"
           fi
 
+          # register-from-ui.zip
+          if [ "${{ steps.changes.outputs.register_ui_changed }}" == "true" ]; then
+            echo "Uploading register-from-ui.zip to S3..."
+            aws s3 cp register-from-ui.zip s3://bucket-kakeibot/register-from-ui.zip
+          else
+            echo "Skipping register-from-ui.zip (no changes)"
+          fi
+
       # 差分があるファイルのみLambda関数を更新
       - name: Update Lambda Functions
         run: |
@@ -143,6 +158,14 @@ jobs:
             aws lambda update-function-code --function-name read-kakeibot-table --s3-bucket bucket-kakeibot --s3-key read-kakeibot-table.zip
           else
             echo "Skipping read-kakeibot-table update (no changes)"
+          fi
+
+          # register-from-ui.zip
+          if [ "${{ steps.changes.outputs.register_ui_changed }}" == "true" ]; then
+            echo "Updating register-from-ui..."
+            aws lambda update-function-code --function-name register-from-ui --s3-bucket bucket-kakeibot --s3-key register-from-ui.zip
+          else
+            echo "Skipping register-from-ui update (no changes)"
           fi
 
       # ui/ が変更された場合のみ実行: Node.js 20 をセットアップ
