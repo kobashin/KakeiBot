@@ -11,6 +11,7 @@ interface Transaction {
   type: TransactionType;
   amount: number;
   category: string;
+  subCategory?: string;
   memo: string;
   date: string; // YYYY-MM-DD
 }
@@ -28,6 +29,18 @@ const INCOME_CATEGORIES = [
   { label: (import.meta.env.VITE_INCOME_P1 as string) || "Person1", icon: "👨" },
   { label: (import.meta.env.VITE_INCOME_P2 as string) || "Person2", icon: "👩" },
 ];
+
+const SUB_CATEGORIES: Record<string, { label: string; icon: string }[]> = {
+  "食費": [
+    { label: "自炊", icon: "🏠" },
+    { label: "外食", icon: "🍜" },
+    { label: "嗜好品", icon: "☕" },
+  ],
+  "交通費": [
+    { label: "高速代", icon: "🛣️" },
+    { label: "駐車場代", icon: "🅿️" },
+  ],
+};
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -105,6 +118,55 @@ function CategoryPicker({
   );
 }
 
+// ─── Sub-Category Picker Modal ───────────────────────────────────────────────
+
+function SubCategoryPicker({
+  items,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  items: { label: string; icon: string }[];
+  selected: string;
+  onSelect: (c: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
+      <div
+        className="w-full max-w-md bg-card rounded-t-2xl pb-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <span className="text-base font-semibold text-card-foreground">サブカテゴリーを選択</span>
+          <button
+            onClick={onClose}
+            className="text-sm text-primary font-medium px-2 py-1 rounded hover:bg-secondary transition-colors"
+          >
+            閉じる
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-2 px-4 pt-4">
+          {items.map((c) => (
+            <button
+              key={c.label}
+              onClick={() => { onSelect(c.label); onClose(); }}
+              className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all text-sm font-medium
+                ${selected === c.label
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-secondary text-card-foreground hover:border-primary/40"
+                }`}
+            >
+              <span className="text-xl">{c.icon}</span>
+              <span>{c.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Register Screen ──────────────────────────────────────────────────────────
 
 function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
@@ -114,6 +176,8 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
   const [memo, setMemo] = useState("");
   const [date, setDate] = useState(todayStr());
   const [showCatPicker, setShowCatPicker] = useState(false);
+  const [subCategory, setSubCategory] = useState("");
+  const [showSubCatPicker, setShowSubCatPicker] = useState(false);
 
   const handlePad = useCallback((key: string) => {
     if (key === "←") {
@@ -137,15 +201,19 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
       type,
       amount,
       category,
+      subCategory: subCategory || undefined,
       memo,
       date,
     });
     setAmountStr("0");
+    setSubCategory("");
     setMemo("");
   };
 
   const cats = type === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
   const catIcon = cats.find((c) => c.label === category)?.icon ?? "📌";
+  const subCats = SUB_CATEGORIES[category];
+  const subCatIcon = subCats?.find((c) => c.label === subCategory)?.icon;
 
   const PAD = [
     ["1", "2", "3"],
@@ -164,6 +232,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
             onClick={() => {
               setType(t);
               setCategory(t === "expense" ? "食費" : INCOME_CATEGORIES[0].label);
+              setSubCategory("");
             }}
             className={`flex-1 py-2.5 text-sm font-semibold transition-colors
               ${type === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
@@ -196,6 +265,21 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
           <div className="flex items-center gap-1.5 text-sm font-medium text-card-foreground">
             <span>{catIcon}</span>
             <span>{category}</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </div>
+        </div>
+        <div
+          className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
+            subCats
+              ? "cursor-pointer hover:bg-secondary/60"
+              : "opacity-40 cursor-not-allowed"
+          }`}
+          onClick={() => subCats && setShowSubCatPicker(true)}
+        >
+          <span className="text-sm font-medium text-muted-foreground">サブカテゴリー</span>
+          <div className="flex items-center gap-1.5 text-sm font-medium text-card-foreground">
+            {subCatIcon && <span>{subCatIcon}</span>}
+            <span>{subCategory || "—"}</span>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
         </div>
@@ -249,8 +333,17 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
         <CategoryPicker
           type={type}
           selected={category}
-          onSelect={setCategory}
+          onSelect={(c) => { setCategory(c); setSubCategory(""); }}
           onClose={() => setShowCatPicker(false)}
+        />
+      )}
+
+      {showSubCatPicker && subCats && (
+        <SubCategoryPicker
+          items={subCats}
+          selected={subCategory}
+          onSelect={setSubCategory}
+          onClose={() => setShowSubCatPicker(false)}
         />
       )}
     </div>
