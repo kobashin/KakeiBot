@@ -225,7 +225,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
   return (
     <div className="flex flex-col h-full bg-secondary">
       {/* Type toggle */}
-      <div className="flex gap-0 mx-4 mt-4 rounded-lg overflow-hidden border border-border bg-card shadow-sm">
+      <div className="flex gap-0 mx-4 mt-2 rounded-lg overflow-hidden border border-border bg-card shadow-sm">
         {(["expense", "income"] as TransactionType[]).map((t) => (
           <button
             key={t}
@@ -234,7 +234,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
               setCategory(t === "expense" ? "食費" : INCOME_CATEGORIES[0].label);
               setSubCategory("");
             }}
-            className={`flex-1 py-2.5 text-sm font-semibold transition-colors
+            className={`flex-1 py-2 text-sm font-semibold transition-colors
               ${type === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
           >
             {t === "expense" ? "支出" : "拠出"}
@@ -243,22 +243,22 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
       </div>
 
       {/* Amount display */}
-      <div className="mx-4 mt-3 bg-card rounded-xl shadow-sm border border-border px-5 py-4 flex items-center justify-between">
-        <span className="text-xl text-muted-foreground font-medium">¥</span>
+      <div className="mx-4 mt-2 bg-card rounded-xl shadow-sm border border-border px-5 py-2.5 flex items-center justify-between">
+        <span className="text-lg text-muted-foreground font-medium">¥</span>
         <span
-          className={`flex-1 text-right text-4xl font-bold tracking-tight ${
+          className={`flex-1 text-right text-3xl font-bold tracking-tight ${
             type === "expense" ? "text-red-500" : "text-emerald-600"
           }`}
         >
           {fmt(parseInt(amountStr, 10) || 0)}
         </span>
-        <span className="text-xl text-muted-foreground font-medium ml-1">円</span>
+        <span className="text-lg text-muted-foreground font-medium ml-1">円</span>
       </div>
 
       {/* Fields */}
-      <div className="mx-4 mt-3 bg-card rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
+      <div className="mx-4 mt-2 bg-card rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
         <div
-          className="flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-secondary/60 transition-colors"
+          className="flex items-center justify-between px-5 py-2.5 cursor-pointer hover:bg-secondary/60 transition-colors"
           onClick={() => setShowCatPicker(true)}
         >
           <span className="text-sm font-medium text-muted-foreground">カテゴリー</span>
@@ -269,7 +269,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
           </div>
         </div>
         <div
-          className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
+          className={`flex items-center justify-between px-5 py-2.5 transition-colors ${
             subCats
               ? "cursor-pointer hover:bg-secondary/60"
               : "opacity-40 cursor-not-allowed"
@@ -283,7 +283,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
         </div>
-        <div className="flex items-center justify-between px-5 py-3">
+        <div className="flex items-center justify-between px-5 py-2">
           <span className="text-sm font-medium text-muted-foreground">メモ</span>
           <input
             type="text"
@@ -293,7 +293,7 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
             className="text-right text-sm font-medium bg-transparent outline-none text-card-foreground placeholder:text-muted-foreground/60 w-40"
           />
         </div>
-        <div className="flex items-center justify-between px-5 py-3">
+        <div className="flex items-center justify-between px-5 py-2">
           <span className="text-sm font-medium text-muted-foreground">日付</span>
           <input
             type="date"
@@ -307,18 +307,18 @@ function RegisterScreen({ onSave }: { onSave: (t: Transaction) => void }) {
       {/* Save */}
       <button
         onClick={handleSave}
-        className="mx-4 mt-3 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm hover:bg-primary/90 active:scale-[0.98] transition-all"
+        className="mx-4 mt-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm hover:bg-primary/90 active:scale-[0.98] transition-all"
       >
         保存
       </button>
 
       {/* Numpad */}
-      <div className="mt-auto mx-4 mb-4 grid grid-cols-3 gap-2">
+      <div className="mt-auto mx-4 mb-2 grid grid-cols-3 gap-1.5">
         {PAD.flat().map((key) => (
           <button
             key={key}
             onClick={() => handlePad(key)}
-            className={`py-4 rounded-xl text-lg font-semibold transition-all active:scale-95
+            className={`py-3 rounded-xl text-lg font-semibold transition-all active:scale-95
               ${key === "←"
                 ? "bg-muted text-muted-foreground hover:bg-muted/80"
                 : "bg-card text-card-foreground shadow-sm border border-border hover:bg-secondary active:bg-muted"
@@ -703,7 +703,7 @@ export default function App() {
       style={{ fontFamily: "'Noto Sans JP', 'Inter', sans-serif" }}
     >
       {/* Header */}
-      <div className="bg-primary text-primary-foreground px-5 py-3.5 flex items-center justify-between shrink-0">
+      <div className="bg-primary text-primary-foreground px-5 py-2.5 flex items-center justify-between shrink-0">
         <h1 className="text-lg font-bold tracking-tight">KakeiBot</h1>
         <span className="text-xs font-medium opacity-80">
           {new Date().getFullYear()}年{new Date().getMonth() + 1}月
